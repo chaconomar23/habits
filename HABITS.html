@@ -2,484 +2,670 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0f19">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SUMA+ HABITS</title>
     
     <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <!-- html2canvas para la imagen HD -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* --- MOBILE CORE --- */
+        /* --- CORE THEME & VARIABLES --- */
         :root {
+            /* Palette Dark/Premium */
             --bg-body: #0b0f19;
-            --bg-gradient: linear-gradient(180deg, #0f172a 0%, #000000 100%);
-            --card-bg: #1e293b;
-            --text-main: #ffffff;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-card: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
             --text-muted: #94a3b8;
             
-            --primary: #3b82f6; /* Azul Vibrante */
-            --primary-glow: rgba(59, 130, 246, 0.5);
+            --primary: #6366f1; /* Indigo */
+            --primary-glow: rgba(99, 102, 241, 0.4);
             --success: #10b981;
             --danger: #ef4444;
+            --warning: #f59e0b;
             
-            --radius-xl: 24px;
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            
-            --nav-height: 85px; /* Taller for mobile touch */
-            --header-height: 70px;
-            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --nav-height: 80px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
         body {
-            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             background: var(--bg-body);
+            background-image: var(--bg-gradient);
             color: var(--text-main);
             height: 100vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            /* Prevent pull-to-refresh on mobile */
-            overscroll-behavior-y: none;
         }
 
-        /* --- LAYOUT --- */
+        /* --- LAYOUT UTILS --- */
         #app-container {
             flex: 1;
             overflow-y: auto;
-            overflow-x: hidden;
-            padding: 16px;
-            padding-bottom: calc(var(--nav-height) + 20px); /* Space for nav */
-            padding-top: calc(var(--header-height) + 10px); /* Space for header */
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
+            padding: 16px; /* Ajustado para móviles */
+            padding-bottom: calc(var(--nav-height) + 30px);
+            scrollbar-width: none; /* Firefox */
         }
-        /* Hide scrollbar clean look */
-        #app-container::-webkit-scrollbar { width: 0px; background: transparent; }
+        #app-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
-        /* --- COMPONENTS --- */
+        /* GLASS CARD STYLE */
         .card {
-            background: var(--card-bg);
+            background: var(--glass-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
             border-radius: var(--radius-lg);
             padding: 20px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
         }
 
+        /* --- TYPOGRAPHY --- */
+        h1, h2, h3, h4 { color: #fff; font-weight: 700; letter-spacing: -0.02em; }
+        h3 { font-size: 1.25rem; margin-bottom: 12px; }
+        .text-sm { font-size: 0.875rem; color: var(--text-muted); }
+        .text-xs { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* --- UI ELEMENTS --- */
         .btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 14px 20px; /* Taller for touch */
-            border-radius: var(--radius-md);
-            font-weight: 700;
-            font-size: 1rem;
-            width: 100%; /* Mobile default full width often better */
-            display: flex; justify-content: center; align-items: center; gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
             box-shadow: 0 4px 15px var(--primary-glow);
-            transition: transform 0.1s;
+            transition: all 0.2s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         }
-        .btn:active { transform: scale(0.97); }
-        .btn-sm { padding: 8px 16px; width: auto; font-size: 0.9rem; }
-        .btn-outline { background: transparent; border: 2px solid rgba(255,255,255,0.1); box-shadow: none; color: var(--text-muted); }
-        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); box-shadow: none; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .btn:disabled { opacity: 0.5; filter: grayscale(1); pointer-events: none; }
+        .btn:active { transform: scale(0.96); }
+        .btn-outline { background: transparent; border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted); }
+        .btn-icon { padding: 8px; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); box-shadow: none; }
+        .btn:disabled, .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
 
-        /* Input styling for mobile (16px font prevents zoom) */
         input, select {
             width: 100%;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
             color: white;
-            padding: 16px;
-            border-radius: var(--radius-md);
-            font-size: 16px; 
+            padding: 14px;
+            border-radius: 12px;
             font-family: inherit;
-            margin-bottom: 16px;
-            outline: none;
-            -webkit-appearance: none; /* Remove iOS default styles */
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
         }
-        input:focus { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
-        label { display: block; margin-bottom: 8px; font-size: 0.85rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        input:focus { outline: none; border-color: var(--primary); }
+        input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; background: rgba(0,0,0,0.3); border-color: transparent; }
+        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
 
-        /* --- HEADER (FIXED TOP) --- */
+        /* --- HEADER & LOGO --- */
         header {
-            position: fixed; top: 0; left: 0; width: 100%;
-            height: var(--header-height);
-            background: rgba(11, 15, 25, 0.95);
+            padding: 15px 20px;
+            background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            z-index: 100;
+            position: sticky; top: 0; z-index: 50;
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0 16px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-top: env(safe-area-inset-top); /* Notch support */
+            border-bottom: 1px solid var(--glass-border);
+            height: 80px;
         }
-        .app-branding { display: flex; align-items: center; gap: 10px; }
-        .app-logo { height: 32px; width: auto; border-radius: 6px; }
-        .app-title { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; color: #fff; }
-        .app-title span { color: var(--primary); }
-
-        .date-navigator {
-            display: flex; align-items: center; gap: 8px;
-            background: rgba(255,255,255,0.05);
-            padding: 6px 12px;
-            border-radius: 20px;
+        .header-left { display: flex; flex-direction: column; }
+        .logo-img {
+            height: 50px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.2));
         }
-        .date-navigator i { color: var(--text-muted); font-size: 0.9rem; }
-        .current-date { font-size: 0.9rem; font-weight: 600; }
+        .date-nav { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .current-date { font-weight: 700; font-size: 1.1rem; }
+        
+        .date-status-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            text-transform: uppercase;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .status-today { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-future { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .status-past { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
 
-        /* --- BOTTOM NAV (FIXED) --- */
+        /* --- NAVIGATION --- */
         nav.bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            height: calc(var(--nav-height) + var(--safe-area-bottom));
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255,255,255,0.05);
-            display: flex; justify-content: space-around;
-            padding-bottom: var(--safe-area-bottom);
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 400px;
+            height: 70px;
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 35px;
+            display: flex; justify-content: space-evenly; align-items: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
             z-index: 100;
         }
         .nav-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--text-muted); gap: 4px;
-            transition: all 0.2s;
+            color: var(--text-muted);
+            display: flex; flex-direction: column; align-items: center;
+            font-size: 0.7rem; gap: 4px; cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
         }
-        .nav-item i { font-size: 1.4rem; margin-bottom: 2px; transition: transform 0.2s; }
-        .nav-item span { font-size: 0.7rem; font-weight: 600; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item.active i { transform: translateY(-3px); }
+        .nav-item i { font-size: 1.4rem; transition: transform 0.2s; }
+        .nav-item.active { color: #fff; }
+        .nav-item.active i { transform: translateY(-4px); color: var(--primary); text-shadow: 0 0 15px var(--primary); }
 
-        /* --- VIEWS --- */
-        .view { display: none; animation: fadeUp 0.3s ease-out; }
-        .view.active { display: block; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- HABIT POOL (Horiz Scroll) --- */
-        .habit-scroll-wrapper {
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 10px;
-            -webkit-overflow-scrolling: touch;
-            margin: 0 -20px; /* Bleed to edge */
-            padding: 0 20px 10px 20px; /* Restore padding */
+        /* --- HABITS --- */
+        .habit-pool {
+            display: flex; gap: 12px; overflow-x: auto; padding: 4px; padding-bottom: 12px;
+            scrollbar-width: none;
+            min-height: 60px; /* Ensure space when empty */
         }
-        .habit-chip {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: #283040;
+        .habit-pool:empty::before {
+            content: "Crea tu primer hábito +";
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            align-self: center;
+            width: 100%;
+            text-align: center;
+            border: 1px dashed var(--glass-border);
+            padding: 10px;
+            border-radius: 12px;
+        }
+        .habit-pool.disabled { opacity: 0.5; pointer-events: none; filter: grayscale(1); }
+
+        .draggable-habit {
+            background: rgba(255,255,255,0.05);
             padding: 10px 16px;
-            border-radius: 50px;
-            margin-right: 10px;
-            font-size: 0.9rem; font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            transition: transform 0.1s;
+            border-radius: 20px;
+            white-space: nowrap;
+            font-size: 0.9rem; font-weight: 500;
+            cursor: grab;
+            border: 1px solid transparent;
+            user-select: none;
+            display: flex; align-items: center; gap: 8px;
+            transition: transform 0.2s;
+            position: relative;
         }
-        .habit-chip:active { transform: scale(0.95); }
-        .habit-chip-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .draggable-habit:active { cursor: grabbing; transform: scale(0.95); }
+        .habit-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .habit-edit-hint { position: absolute; top:-5px; right:-5px; font-size: 0.7rem; color: var(--text-muted); opacity: 0; transition: opacity 0.2s;}
+        .draggable-habit:hover .habit-edit-hint { opacity: 1; }
 
         /* --- TIMELINE (VERTICAL) --- */
-        .timeline-container {
-            background: rgba(0,0,0,0.2);
-            border-radius: var(--radius-lg);
-            border: 1px solid rgba(255,255,255,0.05);
+        .timeline-wrapper {
             position: relative;
+            background: rgba(0,0,0,0.2);
+            border-radius: var(--radius-md);
             height: 1440px; /* 24h * 60px */
-            margin-top: 20px;
+            border: 1px solid var(--glass-border);
+            margin-top: 10px;
+            overflow: hidden;
+            /* Subtle Grid Background */
             background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 100% 60px;
         }
-        .time-marker {
-            position: absolute; left: 10px; font-size: 0.75rem; color: var(--text-muted);
-            transform: translateY(-50%); font-family: monospace;
+        /* Current Time Line */
+        .current-time-line {
+            position: absolute;
+            left: 0; width: 100%; height: 2px;
+            background: var(--danger);
+            z-index: 20;
+            pointer-events: none;
+            display: flex; align-items: center;
         }
-        .timeline-event {
-            position: absolute; left: 55px; right: 10px;
-            border-radius: 12px; padding: 0 12px;
-            display: flex; flex-direction: column; justify-content: center;
-            font-size: 0.85rem; font-weight: 700; color: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.15);
-            backdrop-filter: blur(5px);
-            z-index: 10;
+        .current-time-line::before {
+            content: '';
+            width: 10px; height: 10px; background: var(--danger);
+            border-radius: 50%; margin-left: -5px;
         }
-        /* Current Time Indicator */
-        .now-line {
-            position: absolute; left: 0; width: 100%; height: 2px;
-            background: var(--danger); z-index: 20; pointer-events: none;
-        }
-        .now-line::after { content: 'AHORA'; position: absolute; right: 5px; top:-18px; font-size: 0.6rem; background: var(--danger); color: white; padding: 2px 4px; border-radius: 4px; }
 
-        /* --- BOTTOM SHEET MODALS --- */
+        /* Grid Lines */
+        .time-slot {
+            height: 60px;
+            /* border-bottom: 1px dashed rgba(255,255,255,0.03); Removed for cleaner look with gradient */
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+        }
+        .time-label {
+            width: 50px;
+            text-align: right;
+            padding-right: 10px;
+            font-size: 0.75rem; 
+            color: var(--text-muted);
+            font-weight: 500;
+            transform: translateY(-50%); /* Center on the line */
+            margin-top: 0; /* Align with top of slot */
+        }
+        
+        .timeline-block {
+            position: absolute;
+            left: 60px; right: 10px;
+            border-radius: 12px;
+            padding: 0 12px;
+            font-size: 0.85rem;
+            color: white;
+            overflow: hidden;
+            cursor: pointer;
+            /* Glassy/Neon Look */
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(4px);
+            display: flex; flex-direction: column; justify-content: center;
+            z-index: 10;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .timeline-block:active { transform: scale(0.98); }
+        .timeline-block.locked { cursor: default; opacity: 0.7; filter: grayscale(0.5); }
+
+        /* --- STATS & REPORTS --- */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .big-stat {
+            background: rgba(255,255,255,0.03);
+            border-radius: var(--radius-md);
+            padding: 20px; text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        .stat-number { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 5px 0; text-shadow: 0 0 20px rgba(99,102,241,0.3); }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        /* --- MODALS --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
-            z-index: 1000;
-            display: none; align-items: flex-end; /* Align bottom for mobile */
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            z-index: 200; display: none; align-items: center; justify-content: center;
             opacity: 0; transition: opacity 0.3s;
         }
         .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-content {
+            background: #1e293b;
+            border: 1px solid var(--glass-border);
+            width: 90%; max-width: 450px;
+            padding: 25px; border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        /* Views */
+        .view { display: none; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- EXPORT STYLES (STRATEGY: OVERLAY) --- */
+        #pdf-export-container {
+            position: fixed;
+            top: 0;
+            left: -10000px; /* Hide off-screen initially */
+            width: 794px; /* A4 width */
+            /* Height will be auto to fit content */
+            background: #ffffff;
+            color: #1e293b;
+            padding: 40px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            z-index: 9999; /* Must be high */
+            transition: none;
+            box-sizing: border-box;
+            position: relative; /* For absolute positioning inside */
+        }
+
+        /* Class to bring it to viewport for capture */
+        .pdf-rendering {
+            left: 50% !important; /* Move on screen */
+            top: 50% !important;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            border: 4px solid var(--primary);
+        }
         
-        .bottom-sheet {
-            background: #151c2c;
+        /* Export Specific Classes */
+        .pdf-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid #6366f1;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .pdf-logo { height: 60px; object-fit: contain; }
+        .pdf-title h1 { color: #0f172a; font-size: 24px; margin: 0; }
+        .pdf-title p { color: #64748b; margin: 0; }
+        
+        .pdf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .pdf-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .pdf-card h3 { color: #475569; font-size: 14px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .pdf-card .value { color: #0f172a; font-size: 32px; font-weight: 700; }
+        
+        .pdf-section { margin-bottom: 30px; }
+        .pdf-section h2 { font-size: 18px; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        .pdf-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .pdf-table th { text-align: left; color: #64748b; font-weight: 600; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+        .pdf-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle; }
+        .pdf-table tr:last-child td { border-bottom: none; }
+        
+        .pdf-chart-img {
             width: 100%;
-            border-radius: 24px 24px 0 0;
-            padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
-            transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            border-top: 1px solid rgba(255,255,255,0.1);
-            max-height: 90vh; overflow-y: auto;
-        }
-        .modal-overlay.open .bottom-sheet { transform: translateY(0); }
-        
-        .sheet-handle {
-            width: 40px; height: 4px; background: rgba(255,255,255,0.2);
-            border-radius: 10px; margin: 0 auto 20px auto;
+            height: auto;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            background: white;
         }
 
-        /* --- STATS GRID --- */
-        .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-        .stat-box {
-            background: rgba(255,255,255,0.03); border-radius: 16px; padding: 16px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            border: 1px solid rgba(255,255,255,0.05);
+        .pdf-footer-logo {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            height: 50px;
+            opacity: 0.8;
         }
-        .stat-val { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-top: 4px; }
 
-        /* --- QUICK APPS --- */
-        .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; margin-bottom: 20px; }
-        .app-shortcut {
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            background: rgba(255,255,255,0.05); padding: 12px 5px;
-            border-radius: 12px; cursor: pointer;
+        /* App Icon Style in Report */
+        .app-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            margin-right: 10px;
+            color: white;
+            font-size: 16px;
         }
-        .app-shortcut i { font-size: 1.5rem; }
-        .app-shortcut span { font-size: 0.7rem; text-align: center; }
 
-        /* --- EXPORT (Hidden) --- */
-        #export-canvas { position: fixed; left: -9999px; top: 0; background: white; width: 595px; z-index: 9999; }
-        .export-mode { top: 0 !important; left: 0 !important; }
+        /* Quick Add Chips */
+        .quick-add-container {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;
+        }
+        .quick-add-chip {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s;
+        }
+        .quick-add-chip:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-    <!-- MOBILE HEADER -->
     <header>
-        <div class="app-branding">
-            <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" alt="Logo" class="app-logo">
-            <div class="app-title">SUMA+ <span>HABITS</span></div>
+        <div class="header-left">
+            <div class="text-xs" style="color: var(--primary); letter-spacing: 1px; font-weight: 700;">DASHBOARD</div>
+            <div class="date-nav">
+                <button class="btn-icon btn-outline" onclick="app.changeDate(-1)"><i class="fas fa-chevron-left"></i></button>
+                <div style="display:flex; align-items:center;">
+                    <span id="current-date-display" class="current-date">Hoy</span>
+                    <span id="date-status-badge" class="date-status-badge"></span>
+                </div>
+                <button class="btn-icon btn-outline" onclick="app.changeDate(1)"><i class="fas fa-chevron-right"></i></button>
+            </div>
         </div>
-        <div class="date-navigator">
-            <i class="fas fa-chevron-left" onclick="app.changeDate(-1)"></i>
-            <span id="header-date" class="current-date">Hoy</span>
-            <i class="fas fa-chevron-right" onclick="app.changeDate(1)"></i>
-        </div>
+        <!-- LOGO BRAND -->
+        <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" alt="OmniVersidad Logo" class="logo-img">
     </header>
 
     <div id="app-container">
         
-        <!-- VISTA 1: HÁBITOS & TIMELINE -->
+        <!-- === VISTA HÁBITOS === -->
         <div id="view-habits" class="view active">
-            
-            <!-- Quick Habit Add -->
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                <h2 style="font-size:1.2rem;">Mis Hábitos</h2>
-                <button class="btn btn-sm" onclick="app.openHabitModal()">
-                    <i class="fas fa-plus"></i> Nuevo
-                </button>
-            </div>
-
-            <!-- Horizontal Scroll Pool -->
-            <div class="habit-scroll-wrapper" id="habit-pool">
-                <!-- JS Populates -->
-            </div>
-
-            <div class="card" style="padding:0; overflow:hidden; margin-top:10px;">
-                <div style="padding:15px; background:rgba(0,0,0,0.2); border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between;">
-                    <span style="font-size:0.9rem; font-weight:600; color:var(--text-muted);">Agenda del Día</span>
-                    <span id="status-badge" style="font-size:0.7rem; background:rgba(16,185,129,0.2); color:#10b981; padding:2px 8px; border-radius:4px;">EDITABLE</span>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <h3>Mis Hábitos</h3>
+                        <p class="text-xs">Arrastra o clic para editar.</p>
+                    </div>
+                    <!-- Create Button opens same modal but empty -->
+                    <button id="btn-manage-habits" class="btn btn-sm" onclick="app.openManageHabits()">
+                        <i class="fas fa-plus"></i>
+                    </button>
                 </div>
-                <!-- Timeline -->
-                <div id="timeline" class="timeline-container">
-                    <!-- Lines & Blocks via JS -->
+                <div style="margin-top: 15px;">
+                    <div id="habit-pool-container" class="habit-pool">
+                        <!-- Habits rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="padding: 10px; background: rgba(15, 23, 42, 0.4);">
+                <div class="timeline-wrapper" id="timeline-droppable">
+                    <!-- Grid Lines generated by JS -->
                 </div>
             </div>
         </div>
 
-        <!-- VISTA 2: SCREEN TIME -->
+        <!-- === VISTA PANTALLA === -->
         <div id="view-screen" class="view">
-            <h2 style="margin-bottom:15px;">Bienestar Digital</h2>
-            
             <div class="card">
-                <label>Tiempo Total (Minutos)</label>
-                <input type="number" id="screen-total" placeholder="0" style="font-size:2rem; font-weight:800; color:var(--primary); padding:10px;" onchange="app.saveScreenData()">
-                
-                <div style="margin-top:20px;">
-                    <label>Desglose</label>
-                    <div id="screen-cats"></div>
+                <h3><i class="fas fa-mobile-alt" style="color:var(--primary); margin-right:8px;"></i> Tiempo en Pantalla</h3>
+                <div style="margin-top:15px;">
+                    <label>Tiempo Total (Minutos)</label>
+                    <input type="number" id="st-total-minutes" placeholder="0" style="font-size: 1.5rem; font-weight:bold; color:var(--primary);" onchange="app.updateScreenTimeMain()">
                 </div>
+                
+                <h4 style="margin-top:20px; font-size: 1rem;">Clasificación</h4>
+                <div id="st-categories-container"></div>
             </div>
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Top Apps</h3>
-                    <button class="btn btn-sm btn-outline" onclick="ui.openSheet('sheet-add-app')"><i class="fas fa-plus"></i></button>
+                    <h3>Top Aplicaciones</h3>
+                    <button id="btn-add-app" class="btn btn-sm btn-outline" onclick="ui.openModal('modal-add-app')"><i class="fas fa-plus"></i></button>
                 </div>
-                <div id="app-list"></div>
+                <div id="st-apps-list"></div>
             </div>
         </div>
 
-        <!-- VISTA 3: REPORTES -->
+        <!-- === VISTA REPORTES === -->
         <div id="view-reports" class="view">
-            <h2 style="margin-bottom:15px;">Resumen Diario</h2>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>Análisis Diario</h3>
+                    <button class="btn btn-sm btn-outline" onclick="app.exportImage()"><i class="fas fa-image"></i> Descargar Imagen</button>
+                </div>
+                <p id="daily-analysis-text" class="text-sm" style="margin-top:10px; font-style: italic; opacity: 0.8;">
+                    Recopilando datos...
+                </p>
+            </div>
+
+            <div class="stat-grid">
+                <div class="big-stat">
+                    <div class="text-xs">Puntaje Hoy</div>
+                    <div class="stat-number" id="report-score-val">0</div>
+                </div>
+                <div class="big-stat">
+                    <div class="text-xs">Tiempo Pantalla</div>
+                    <div class="stat-number" id="report-screen-val" style="color: #c084fc;">0h</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>Tendencia Semanal (Puntos)</h4>
+                <div class="chart-container">
+                    <canvas id="chart-trend"></canvas>
+                </div>
+                <p class="text-xs" style="margin-top:10px; text-align:center;">Últimos 7 días</p>
+            </div>
             
-            <div class="stats-row">
-                <div class="stat-box">
-                    <span class="stat-val" id="rep-score" style="color:var(--success);">0</span>
-                    <span class="stat-label">Puntos</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-val" id="rep-time" style="color:#a855f7;">0h</span>
-                    <span class="stat-label">Pantalla</span>
+            <div class="card">
+                <h4>Distribución de Pantalla</h4>
+                <div class="chart-container">
+                    <canvas id="chart-screen"></canvas>
                 </div>
             </div>
-
-            <div class="card">
-                <h4 style="margin-bottom:10px;">Progreso Semanal</h4>
-                <div style="height:200px;"><canvas id="chart-trend"></canvas></div>
-            </div>
-
-            <div class="card">
-                <h4 style="margin-bottom:10px;">Distribución Digital</h4>
-                <div style="height:200px;"><canvas id="chart-cats"></canvas></div>
-            </div>
-
-            <div style="height:20px;"></div>
-            <button class="btn" onclick="app.exportReport()">
-                <i class="fas fa-share-alt"></i> Compartir Reporte
-            </button>
-            <p style="text-align:center; color:var(--text-muted); font-size:0.8rem; margin-top:10px;">Genera una imagen lista para enviar.</p>
         </div>
 
     </div>
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="ui.go('view-habits', this)">
-            <i class="fas fa-calendar-day"></i>
-            <span>Hábitos</span>
-        </div>
-        <div class="nav-item" onclick="ui.go('view-screen', this)">
-            <i class="fas fa-mobile-screen"></i>
-            <span>Pantalla</span>
-        </div>
-        <div class="nav-item" onclick="ui.go('view-reports', this)">
-            <i class="fas fa-chart-pie"></i>
-            <span>Reportes</span>
-        </div>
-    </nav>
+    <!-- === HIDDEN PRINT CONTAINER (THE TEMPLATE) === -->
+    <div id="pdf-export-container">
+        <!-- JS will populate this -->
+    </div>
 
-    <!-- SHEET: MANAGE HABIT -->
-    <div id="sheet-habit" class="modal-overlay">
-        <div class="bottom-sheet">
-            <div class="sheet-handle"></div>
-            <h3 id="habit-sheet-title" style="margin-bottom:20px;">Nuevo Hábito</h3>
-            <input type="hidden" id="habit-id">
+    <!-- MODAL: GESTIONAR HÁBITO (CREAR / EDITAR) -->
+    <div id="modal-manage-habits" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-habit-title">Diseñar Hábito</h3>
+            <input type="hidden" id="edit-habit-id">
             
             <label>Nombre</label>
-            <input type="text" id="habit-name" placeholder="Ej: Leer, Gym...">
+            <input type="text" id="new-habit-name" placeholder="Ej: Leer, Meditar...">
             
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <div>
                     <label>Tipo</label>
-                    <select id="habit-type">
+                    <select id="new-habit-type">
                         <option value="positive">Positivo (+)</option>
                         <option value="negative">Negativo (-)</option>
                     </select>
                 </div>
                 <div>
                     <label>Puntos</label>
-                    <input type="number" id="habit-points" value="10">
+                    <input type="number" id="new-habit-points" value="10">
                 </div>
             </div>
-            
-            <label>Color</label>
-            <input type="color" id="habit-color" value="#3b82f6" style="height:50px; padding:2px;">
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label>Categoría</label>
+                    <input type="text" id="new-habit-cat" placeholder="Salud, Mente...">
+                </div>
+                <div>
+                    <label>Color</label>
+                    <input type="color" id="new-habit-color" value="#6366f1" style="height: 50px; padding: 5px; cursor: pointer;">
+                </div>
+            </div>
 
             <div style="display:flex; gap:10px; margin-top:20px;">
-                <button id="btn-del-habit" class="btn btn-danger" style="width:50px; display:none;" onclick="app.deleteHabit()"><i class="fas fa-trash"></i></button>
-                <button class="btn" onclick="app.saveHabit()">Guardar</button>
+                <!-- Botón Eliminar solo visible al editar -->
+                <button id="btn-delete-habit" class="btn btn-danger" style="display:none;" onclick="app.deleteHabitDefinition()">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-outline" style="flex:1" onclick="ui.closeModal('modal-manage-habits')">Cancelar</button>
+                <button class="btn" style="flex:2" onclick="app.saveHabitDefinition()">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- SHEET: ADD TO TIMELINE -->
-    <div id="sheet-log" class="modal-overlay">
-        <div class="bottom-sheet">
-            <div class="sheet-handle"></div>
-            <h3 id="log-title" style="margin-bottom:5px;">Registrar Actividad</h3>
-            <p id="log-subtitle" style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;"></p>
-            <input type="hidden" id="log-habit-id">
-            <input type="hidden" id="log-id"> <!-- For editing existing log -->
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+    <!-- MODAL: CONFIRMAR DURACIÓN (DROP) -->
+    <div id="modal-drop-log" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Registrar Actividad</h3>
+            <p class="text-sm" style="margin-bottom:15px;">Ajusta el horario exacto.</p>
+            <input type="hidden" id="drop-habit-id">
+            
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                 <div>
                     <label>Inicio</label>
-                    <input type="time" id="log-start">
+                    <input type="time" id="drop-start-time">
                 </div>
                 <div>
                     <label>Fin</label>
-                    <input type="time" id="log-end">
+                    <input type="time" id="drop-end-time">
                 </div>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:10px;">
-                <button id="btn-del-log" class="btn btn-danger" style="display:none;" onclick="app.deleteLog()">Borrar</button>
-                <button class="btn" onclick="app.confirmLog()">Confirmar</button>
+                <button class="btn btn-outline" onclick="ui.closeModal('modal-drop-log')">Cancelar</button>
+                <button class="btn" style="flex:1" onclick="app.confirmDropLog()">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- SHEET: ADD APP -->
-    <div id="sheet-add-app" class="modal-overlay">
-        <div class="bottom-sheet">
-            <div class="sheet-handle"></div>
-            <h3>Registrar App</h3>
+    <!-- MODAL: EDITAR/BORRAR LOG (TIMELINE) -->
+    <div id="modal-edit-log" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="edit-log-title">Editar</h3>
+            <input type="hidden" id="edit-log-id">
             
-            <div class="app-grid" id="quick-apps"></div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div>
+                    <label>Inicio</label>
+                    <input type="time" id="edit-log-start">
+                </div>
+                <div>
+                    <label>Fin</label>
+                    <input type="time" id="edit-log-end">
+                </div>
+            </div>
 
-            <label>Nombre</label>
-            <input type="text" id="app-name">
-            <label>Minutos</label>
-            <input type="number" id="app-mins" placeholder="30">
-            
-            <button class="btn" onclick="app.addApp()">Agregar</button>
+            <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                <button class="btn btn-danger" onclick="app.deleteLog()"><i class="fas fa-trash"></i></button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" onclick="ui.closeModal('modal-edit-log')">Cancelar</button>
+                    <button class="btn" onclick="app.saveLogEdit()">Actualizar</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- HIDDEN EXPORT CONTAINER -->
-    <div id="export-canvas">
-        <!-- populated by JS for screenshot -->
+    <!-- MODAL: AGREGAR APP -->
+    <div id="modal-add-app" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Registrar App</h3>
+            
+            <p class="text-xs" style="margin-bottom:8px;">Populares:</p>
+            <div class="quick-add-container" id="quick-add-apps">
+                <!-- JS will populate chips -->
+            </div>
+
+            <label>Nombre de la App</label>
+            <input type="text" id="app-log-name" placeholder="Ej: Instagram...">
+            <label>Minutos</label>
+            <input type="number" id="app-log-mins" placeholder="Ej: 45">
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="flex:1" onclick="app.addScreenApp()">Agregar</button>
+                <button class="btn btn-outline" onclick="ui.closeModal('modal-add-app')">Cerrar</button>
+            </div>
+        </div>
     </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="ui.switchView('view-habits', this)">
+            <i class="fas fa-calendar-check"></i>
+            <span>Hábitos</span>
+        </div>
+        <div class="nav-item" onclick="ui.switchView('view-screen', this)">
+            <i class="fas fa-stopwatch"></i>
+            <span>Pantalla</span>
+        </div>
+        <div class="nav-item" onclick="ui.switchView('view-reports', this)">
+            <i class="fas fa-chart-line"></i>
+            <span>Reportes</span>
+        </div>
+    </nav>
 
     <script>
         /* --- LOGIC CORE --- */
-        const $ = (id) => document.getElementById(id);
-        const uuid = () => Math.random().toString(36).substr(2, 9);
-        const fmtDate = (d) => d.toISOString().split('T')[0];
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        const formatDate = (date) => date.toISOString().split('T')[0];
         const minsToTime = (m) => {
-            const h = Math.floor(m / 60).toString().padStart(2,'0');
-            const min = Math.floor(m % 60).toString().padStart(2,'0');
+            const h = Math.floor(m / 60).toString().padStart(2, '0');
+            const min = Math.floor(m % 60).toString().padStart(2, '0');
             return `${h}:${min}`;
         };
         const timeToMins = (t) => {
@@ -487,508 +673,840 @@
             return h * 60 + m;
         };
 
-        // --- ICONS & CONFIG ---
+        const defaultHabits = []; 
+        const defaultCategories = ['Redes Sociales', 'Productividad y Finanzas', 'Creatividad'];
+
+        // --- APP ICONS MAPPING ---
         const appIcons = {
-            'facebook': {i:'fab fa-facebook', c:'#1877F2'}, 'instagram': {i:'fab fa-instagram', c:'#E4405F'},
-            'whatsapp': {i:'fab fa-whatsapp', c:'#25D366'}, 'tiktok': {i:'fab fa-tiktok', c:'#000000'},
-            'youtube': {i:'fab fa-youtube', c:'#FF0000'}, 'spotify': {i:'fab fa-spotify', c:'#1DB954'},
-            'chatgpt': {i:'fas fa-robot', c:'#10a37f'}
-        };
-        const getIcon = (name) => {
-            const key = Object.keys(appIcons).find(k => name.toLowerCase().includes(k));
-            if(key) return appIcons[key];
-            return {i:'fas fa-mobile-alt', c:'#64748b'};
+            'facebook': { icon: 'fab fa-facebook', color: '#1877F2' },
+            'instagram': { icon: 'fab fa-instagram', color: '#E4405F' },
+            'whatsapp': { icon: 'fab fa-whatsapp', color: '#25D366' },
+            'twitter': { icon: 'fab fa-twitter', color: '#1DA1F2' },
+            'x': { icon: 'fab fa-x-twitter', color: '#000000' },
+            'tiktok': { icon: 'fab fa-tiktok', color: '#000000' },
+            'spotify': { icon: 'fab fa-spotify', color: '#1DB954' },
+            'youtube': { icon: 'fab fa-youtube', color: '#FF0000' },
+            'youtube music': { icon: 'fab fa-youtube', color: '#FF0000' },
+            'snapchat': { icon: 'fab fa-snapchat-ghost', color: '#FFFC00' }, 
+            'google': { icon: 'fab fa-google', color: '#4285F4' },
+            'chatgpt': { icon: 'fas fa-robot', color: '#10a37f' },
+            'gemini': { icon: 'fas fa-star', color: '#4285F4' },
+            'fotos': { icon: 'fas fa-images', color: '#FBBC05' },
+            'cámara': { icon: 'fas fa-camera', color: '#999999' },
+            'reloj': { icon: 'fas fa-clock', color: '#000000' },
+            'configuración': { icon: 'fas fa-cog', color: '#607D8B' },
+            'calendario': { icon: 'fas fa-calendar-alt', color: '#4285F4' },
+            'navegador': { icon: 'fas fa-globe', color: '#4CAF50' },
+            'safari': { icon: 'fab fa-safari', color: '#2196F3' },
+            'chrome': { icon: 'fab fa-chrome', color: '#EA4335' }
         };
 
-        const categories = ['Redes Sociales', 'Productividad y Finanzas', 'Creatividad'];
+        const getAppIcon = (name) => {
+            const key = name.toLowerCase().trim();
+            let match = null;
+            if (appIcons[key]) match = appIcons[key];
+            else {
+                for (const k in appIcons) {
+                    if (key.includes(k)) {
+                        match = appIcons[k];
+                        break;
+                    }
+                }
+            }
+            
+            if (match) {
+                return `<div class="app-icon-wrapper" style="background:${match.color};"><i class="${match.icon}"></i></div>`;
+            }
+            return `<div class="app-icon-wrapper" style="background:#475569;"><i class="fas fa-mobile-alt"></i></div>`;
+        };
 
-        // --- STATE ---
+        // State
         const state = {
-            date: fmtDate(new Date()),
-            habits: JSON.parse(localStorage.getItem('sh_habits')) || [],
-            logs: JSON.parse(localStorage.getItem('sh_logs')) || {}
+            currentDate: formatDate(new Date()),
+            habits: JSON.parse(localStorage.getItem('zt_habits')) || defaultHabits,
+            logs: JSON.parse(localStorage.getItem('zt_logs')) || {},
+            pendingDrop: null 
         };
 
-        /* --- UI MANAGER --- */
+        const $ = (id) => document.getElementById(id);
+
+        /* --- UI CONTROLLER --- */
         const ui = {
-            go: (viewId, el) => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            switchView: (viewId, navEl) => {
+                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
                 $(viewId).classList.add('active');
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-                el.classList.add('active');
-                if(viewId === 'view-reports') app.renderReports();
+                
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                navEl.classList.add('active');
+
+                if (viewId === 'view-reports') {
+                    setTimeout(() => app.renderReports(), 100);
+                }
             },
-            openSheet: (id) => {
+            openModal: (id) => {
                 $(id).classList.add('open');
-                // Close on click outside (top area)
-                $(id).onclick = (e) => { if(e.target === $(id)) ui.closeSheet(id); };
+                if(id === 'modal-add-app') app.renderQuickAdd();
             },
-            closeSheet: (id) => $(id).classList.remove('open')
-        };
-
-        /* --- APP LOGIC --- */
-        const app = {
-            init: () => {
-                app.renderTimelineGrid();
-                app.renderHabits();
-                app.loadDay();
-                app.renderQuickApps();
-            },
-
-            save: () => {
-                localStorage.setItem('sh_habits', JSON.stringify(state.habits));
-                localStorage.setItem('sh_logs', JSON.stringify(state.logs));
-            },
-
-            // Date & Status
-            changeDate: (offset) => {
-                const d = new Date(state.date);
-                d.setDate(d.getDate() + offset);
-                state.date = fmtDate(d);
-                app.loadDay();
-            },
+            closeModal: (id) => $(id).classList.remove('open'),
             
-            getStatus: () => {
-                const now = new Date().setHours(0,0,0,0);
-                const cur = new Date(state.date.split('-').map((v,i)=>i===1?v-1:v)).setHours(0,0,0,0);
-                if(cur < now) return 'past';
-                if(cur > now) return 'future';
-                return 'today';
-            },
-
-            loadDay: () => {
-                // Header
-                const dObj = new Date(state.date.split('-'));
-                const niceDate = dObj.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'short'});
-                $('header-date').innerText = niceDate.toUpperCase();
-
-                // Status UI
-                const st = app.getStatus();
-                const badge = $('status-badge');
-                if(st === 'today') { badge.innerText = "HOY • EDITABLE"; badge.style.color = '#10b981'; }
-                else if(st === 'future') { badge.innerText = "FUTURO • PLAN"; badge.style.color = '#3b82f6'; }
-                else { badge.innerText = "PASADO • SOLO LECTURA"; badge.style.color = '#94a3b8'; }
-
-                // Init Log Data
-                if(!state.logs[state.date]) {
-                    state.logs[state.date] = { habits: [], screen: { total:0, cats:{}, apps:[] } };
-                    categories.forEach(c => state.logs[state.date].screen.cats[c] = 0);
-                }
-
-                // Render Timeline Blocks
-                document.querySelectorAll('.timeline-event').forEach(e => e.remove());
-                state.logs[state.date].habits.forEach(app.drawBlock);
-
-                // Render Screen Time
-                const sData = state.logs[state.date].screen;
-                $('screen-total').value = sData.total || '';
-                app.renderScreenInputs();
-                app.renderAppList();
-
-                // Locks
-                const locked = st === 'past';
-                $('screen-total').disabled = locked;
-                document.querySelectorAll('#view-screen input').forEach(i => i.disabled = locked);
-                // Re-render habit pool to reflect clickability
-                app.renderHabits();
-            },
-
-            /* --- HABITS --- */
-            openHabitModal: (id = null) => {
-                $('habit-id').value = id || '';
-                if(id) {
-                    const h = state.habits.find(x => x.id === id);
-                    $('habit-name').value = h.name;
-                    $('habit-points').value = h.points;
-                    $('habit-color').value = h.color;
-                    $('btn-del-habit').style.display = 'block';
-                    $('habit-sheet-title').innerText = 'Editar Hábito';
-                } else {
-                    $('habit-name').value = '';
-                    $('habit-points').value = 10;
-                    $('btn-del-habit').style.display = 'none';
-                    $('habit-sheet-title').innerText = 'Crear Hábito';
-                }
-                ui.openSheet('sheet-habit');
-            },
-
-            saveHabit: () => {
-                const id = $('habit-id').value;
-                const name = $('habit-name').value;
-                if(!name) return;
+            renderTimelineBackground: () => {
+                const container = $('timeline-droppable');
+                container.innerHTML = '';
                 
-                const obj = {
-                    id: id || uuid(),
-                    name,
-                    type: $('habit-type').value,
-                    points: parseInt($('habit-points').value),
-                    color: $('habit-color').value
-                };
-
-                if(id) {
-                    const idx = state.habits.findIndex(h => h.id === id);
-                    state.habits[idx] = obj;
-                } else {
-                    state.habits.push(obj);
+                // Add Current Time Line (if Today)
+                if(app.getDateStatus() === 'today') {
+                    const now = new Date();
+                    const mins = now.getHours() * 60 + now.getMinutes();
+                    const line = document.createElement('div');
+                    line.className = 'current-time-line';
+                    line.style.top = mins + 'px';
+                    container.appendChild(line);
                 }
-                app.save();
-                app.renderHabits();
-                ui.closeSheet('sheet-habit');
-                app.loadDay(); // Refresh colors on timeline
-            },
 
-            deleteHabit: () => {
-                if(confirm('¿Borrar hábito?')) {
-                    state.habits = state.habits.filter(h => h.id !== $('habit-id').value);
-                    app.save();
-                    app.renderHabits();
-                    ui.closeSheet('sheet-habit');
-                }
-            },
-
-            renderHabits: () => {
-                const pool = $('habit-pool');
-                pool.innerHTML = '';
-                const locked = app.getStatus() === 'past';
-
-                state.habits.forEach(h => {
-                    const chip = document.createElement('div');
-                    chip.className = 'habit-chip';
-                    chip.style.borderColor = h.color;
-                    chip.innerHTML = `<div class="habit-chip-dot" style="background:${h.color}"></div> ${h.name}`;
+                for (let i = 0; i < 24; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
                     
-                    if(!locked) {
-                        // On mobile: Tap habit -> Add to timeline
-                        chip.onclick = () => {
-                            // Pre-fill modal for new log
-                            $('log-habit-id').value = h.id;
-                            $('log-id').value = ''; 
-                            $('log-title').innerText = `Agendar: ${h.name}`;
-                            $('log-subtitle').innerText = "Elige el horario para esta actividad.";
-                            $('btn-del-log').style.display = 'none';
-                            
-                            // Set default time (now)
-                            const now = new Date();
-                            const timeStr = now.toTimeString().substr(0,5);
-                            $('log-start').value = timeStr;
-                            $('log-end').value = minsToTime(timeToMins(timeStr) + 60); // +1h
-                            
-                            ui.openSheet('sheet-log');
-                        };
-                        
-                        // Long press to edit definition? Let's use a small edit icon instead for clarity
-                        const editBtn = document.createElement('i');
-                        editBtn.className = 'fas fa-cog';
-                        editBtn.style.marginLeft = '8px';
-                        editBtn.style.color = '#64748b';
-                        editBtn.onclick = (e) => { e.stopPropagation(); app.openHabitModal(h.id); };
-                        chip.appendChild(editBtn);
-                    } else {
-                        chip.style.opacity = 0.5;
-                    }
-                    pool.appendChild(chip);
-                });
-            },
-
-            /* --- TIMELINE --- */
-            renderTimelineGrid: () => {
-                const t = $('timeline');
-                t.innerHTML = '';
-                // Now Line
-                const now = new Date();
-                const nowMins = now.getHours()*60 + now.getMinutes();
-                const line = document.createElement('div');
-                line.className = 'now-line';
-                line.style.top = nowMins + 'px';
-                t.appendChild(line);
-
-                for(let i=0; i<24; i++) {
-                    const mk = document.createElement('div');
-                    mk.className = 'time-marker';
-                    mk.style.top = (i*60)+'px';
-                    mk.innerText = `${i}:00`;
-                    t.appendChild(mk);
-                }
-            },
-
-            confirmLog: () => {
-                const hid = $('log-habit-id').value;
-                const lid = $('log-id').value;
-                const start = timeToMins($('log-start').value);
-                const end = timeToMins($('log-end').value);
-
-                if(end <= start) return alert("Fin debe ser después de Inicio");
-
-                // Overlap Check
-                const dayLogs = state.logs[state.date].habits;
-                const conflict = dayLogs.find(l => l.id !== lid && (start < l.end && end > l.start));
-                if(conflict) return alert("⚠️ Se empalma con otra actividad.");
-
-                if(lid) {
-                    const idx = dayLogs.findIndex(l => l.id === lid);
-                    dayLogs[idx].start = start;
-                    dayLogs[idx].end = end;
-                } else {
-                    dayLogs.push({ id: uuid(), habitId: hid, start, end });
-                }
-                
-                app.save();
-                app.loadDay();
-                ui.closeSheet('sheet-log');
-            },
-
-            deleteLog: () => {
-                const lid = $('log-id').value;
-                state.logs[state.date].habits = state.logs[state.date].habits.filter(l => l.id !== lid);
-                app.save();
-                app.loadDay();
-                ui.closeSheet('sheet-log');
-            },
-
-            drawBlock: (log) => {
-                const h = state.habits.find(x => x.id === log.habitId);
-                if(!h) return;
-                
-                const b = document.createElement('div');
-                b.className = 'timeline-event';
-                b.style.top = log.start + 'px';
-                b.style.height = (log.end - log.start) + 'px';
-                b.style.borderLeft = `4px solid ${h.color}`;
-                b.style.background = `linear-gradient(90deg, ${h.color}22, ${h.color}44)`;
-                b.innerHTML = `<span>${h.name}</span>`;
-                
-                if(app.getStatus() !== 'past') {
-                    b.onclick = () => {
-                        $('log-habit-id').value = h.id;
-                        $('log-id').value = log.id;
-                        $('log-title').innerText = `Editar: ${h.name}`;
-                        $('log-subtitle').innerText = "Modifica o elimina este bloque.";
-                        $('log-start').value = minsToTime(log.start);
-                        $('log-end').value = minsToTime(log.end);
-                        $('btn-del-log').style.display = 'block';
-                        ui.openSheet('sheet-log');
-                    };
-                }
-                $('timeline').appendChild(b);
-            },
-
-            /* --- SCREEN TIME --- */
-            saveScreenData: () => {
-                const d = state.logs[state.date].screen;
-                d.total = parseInt($('screen-total').value) || 0;
-                app.save();
-            },
-            
-            renderScreenInputs: () => {
-                const cDiv = $('screen-cats');
-                cDiv.innerHTML = '';
-                const d = state.logs[state.date].screen.cats;
-                const locked = app.getStatus() === 'past';
-
-                categories.forEach(cat => {
-                    const row = document.createElement('div');
-                    row.style.marginBottom = '10px';
-                    row.innerHTML = `
-                        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                            <span style="font-size:0.85rem; color:#cbd5e1;">${cat}</span>
-                        </div>
-                        <input type="number" value="${d[cat]}" ${locked?'disabled':''} 
-                        onchange="app.updateCat('${cat}', this.value)" style="padding:10px; margin:0;">
-                    `;
-                    cDiv.appendChild(row);
-                });
-            },
-
-            updateCat: (cat, val) => {
-                state.logs[state.date].screen.cats[cat] = parseInt(val) || 0;
-                app.save();
-            },
-
-            renderQuickApps: () => {
-                const c = $('quick-apps');
-                Object.keys(appIcons).slice(0, 8).forEach(k => {
-                    const ic = appIcons[k];
-                    const div = document.createElement('div');
-                    div.className = 'app-shortcut';
-                    div.innerHTML = `<i class="${ic.i}" style="color:${ic.c}"></i> <span>${k}</span>`;
-                    div.onclick = () => {
-                        $('app-name').value = k.charAt(0).toUpperCase() + k.slice(1);
-                        $('app-mins').focus();
-                    };
-                    c.appendChild(div);
-                });
-            },
-
-            addApp: () => {
-                const name = $('app-name').value;
-                const mins = parseInt($('app-mins').value);
-                if(name && mins) {
-                    state.logs[state.date].screen.apps.push({name, mins});
-                    state.logs[state.date].screen.apps.sort((a,b)=>b.mins-a.mins);
-                    app.save();
-                    app.loadDay();
-                    ui.closeSheet('sheet-add-app');
-                    $('app-name').value = '';
-                }
-            },
-
-            renderAppList: () => {
-                const l = $('app-list');
-                l.innerHTML = '';
-                const apps = state.logs[state.date].screen.apps;
-                const locked = app.getStatus() === 'past';
-
-                apps.forEach((a, i) => {
-                    const ic = getIcon(a.name);
-                    const row = document.createElement('div');
-                    row.style.cssText = 'display:flex; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.05);';
-                    row.innerHTML = `
-                        <div style="width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; margin-right:12px;">
-                            <i class="${ic.i}" style="color:${ic.c}; font-size:1.2rem;"></i>
-                        </div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700;">${a.name}</div>
-                            <div style="font-size:0.8rem; color:var(--text-muted);">${a.mins} min</div>
-                        </div>
-                        ${!locked ? `<i class="fas fa-trash" style="color:var(--danger); opacity:0.5;" onclick="app.remApp(${i})"></i>` : ''}
-                    `;
-                    l.appendChild(row);
-                });
-            },
-
-            remApp: (i) => {
-                state.logs[state.date].screen.apps.splice(i, 1);
-                app.save();
-                app.loadDay();
-            },
-
-            /* --- REPORTING --- */
-            renderReports: () => {
-                const d = state.logs[state.date];
-                let score = 0;
-                d.habits.forEach(l => {
-                    const h = state.habits.find(x => x.id === l.habitId);
-                    if(h) score += (h.type==='positive' ? h.points : -h.points);
-                });
-                $('rep-score').innerText = score;
-                const tm = d.screen.total;
-                $('rep-time').innerText = `${Math.floor(tm/60)}h ${tm%60}m`;
-
-                // Charts
-                if(app.ch1) app.ch1.destroy();
-                if(app.ch2) app.ch2.destroy();
-
-                // Trend
-                const labels = [];
-                const data = [];
-                const cur = new Date(state.date);
-                for(let i=6; i>=0; i--) {
-                    const temp = new Date(cur);
-                    temp.setDate(temp.getDate() - i);
-                    const k = fmtDate(temp);
-                    labels.push(temp.toLocaleDateString('es-ES',{weekday:'narrow'}));
+                    const label = document.createElement('span');
+                    label.className = 'time-label';
+                    label.innerText = `${i}:00`;
                     
-                    let s = 0;
-                    if(state.logs[k]) {
-                        state.logs[k].habits.forEach(l => {
-                            const h = state.habits.find(x => x.id === l.habitId);
-                            if(h) s += (h.type==='positive'?h.points:-h.points);
-                        });
-                    }
-                    data.push(s);
+                    slot.appendChild(label);
+                    container.appendChild(slot);
                 }
-
-                app.ch1 = new Chart($('chart-trend'), {
-                    type: 'line',
-                    data: {
-                        labels,
-                        datasets: [{ 
-                            label:'Pts', data, 
-                            borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.4 
-                        }]
-                    },
-                    options: { 
-                        responsive:true, maintainAspectRatio:false, 
-                        plugins:{legend:{display:false}},
-                        scales:{x:{grid:{display:false}}, y:{grid:{color:'rgba(255,255,255,0.1)'}}}
-                    }
-                });
-
-                // Cats
-                app.ch2 = new Chart($('chart-cats'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: categories,
-                        datasets: [{
-                            data: categories.map(c => d.screen.cats[c]),
-                            backgroundColor: ['#3b82f6', '#f59e0b', '#ec4899'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right', labels:{color:'#fff', font:{size:10}}}} }
-                });
-            },
-
-            exportReport: () => {
-                const c = $('export-canvas');
-                // Build clean HTML structure for export
-                const d = state.logs[state.date];
-                const score = $('rep-score').innerText;
-                const tm = $('rep-time').innerText;
-                
-                c.innerHTML = `
-                    <div style="padding:40px; background:#fff; color:#0f172a; font-family:sans-serif;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #3b82f6; padding-bottom:20px; margin-bottom:30px;">
-                            <div>
-                                <h1 style="margin:0; font-size:24px;">Reporte Diario</h1>
-                                <p style="margin:5px 0 0; color:#64748b;">${$('header-date').innerText}</p>
-                            </div>
-                            <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" style="height:60px;">
-                        </div>
-                        
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:30px;">
-                            <div style="background:#f1f5f9; padding:20px; border-radius:12px; text-align:center;">
-                                <div style="font-size:14px; color:#64748b; text-transform:uppercase;">Puntaje</div>
-                                <div style="font-size:32px; font-weight:800; color:#10b981;">${score}</div>
-                            </div>
-                            <div style="background:#f1f5f9; padding:20px; border-radius:12px; text-align:center;">
-                                <div style="font-size:14px; color:#64748b; text-transform:uppercase;">Pantalla</div>
-                                <div style="font-size:32px; font-weight:800; color:#3b82f6;">${tm}</div>
-                            </div>
-                        </div>
-
-                        <h3 style="border-bottom:1px solid #e2e8f0; padding-bottom:10px;">Top Apps</h3>
-                        <table style="width:100%; border-collapse:collapse; margin-bottom:40px;">
-                            ${d.screen.apps.slice(0,5).map(a => `
-                                <tr>
-                                    <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; font-weight:600;">${a.name}</td>
-                                    <td style="padding:10px 0; border-bottom:1px solid #f1f5f9; text-align:right;">${a.mins} min</td>
-                                </tr>
-                            `).join('') || '<tr><td style="padding:10px;">Sin datos</td></tr>'}
-                        </table>
-
-                        <div style="text-align:right; margin-top:50px;">
-                            <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" style="height:40px; opacity:0.5;">
-                        </div>
-                    </div>
-                `;
-
-                c.classList.add('export-mode');
-                
-                setTimeout(() => {
-                    html2canvas(c, { scale:2, useCORS:true, backgroundColor:'#ffffff' }).then(cv => {
-                        const a = document.createElement('a');
-                        a.download = `SUMA_Reporte_${state.date}.png`;
-                        a.href = cv.toDataURL('image/png');
-                        a.click();
-                        c.classList.remove('export-mode');
-                    });
-                }, 500);
+                container.ondragover = (e) => e.preventDefault();
+                container.ondrop = (e) => app.handleDrop(e);
             }
         };
 
-        // Boot
-        window.onload = app.init;
+        /* --- APP CONTROLLER --- */
+        const app = {
+            init: () => {
+                ui.renderTimelineBackground();
+                app.renderHabitPool();
+                app.loadDayData(); // This now handles UI State
+            },
+
+            saveData: () => {
+                localStorage.setItem('zt_habits', JSON.stringify(state.habits));
+                localStorage.setItem('zt_logs', JSON.stringify(state.logs));
+            },
+
+            // --- DATE LOGIC ---
+            getDateStatus: () => {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const current = new Date(y, m - 1, d); // Construct local date
+                current.setHours(0,0,0,0);
+
+                if (current.getTime() < today.getTime()) return 'past';
+                if (current.getTime() > today.getTime()) return 'future';
+                return 'today';
+            },
+
+            changeDate: (offset) => {
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const date = new Date(y, m - 1, d);
+                date.setDate(date.getDate() + offset);
+                state.currentDate = formatDate(date);
+                
+                app.loadDayData();
+            },
+
+            loadDayData: () => {
+                const status = app.getDateStatus();
+                
+                // 1. Update Header Display
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d);
+                const opts = { weekday: 'long', day: 'numeric', month: 'long' };
+                const display = dateObj.toLocaleDateString('es-ES', opts);
+                $('current-date-display').innerText = display.charAt(0).toUpperCase() + display.slice(1);
+
+                // 2. Update Status Badge
+                const badge = $('date-status-badge');
+                badge.className = 'date-status-badge'; // reset
+                if(status === 'today') { badge.innerText = "HOY"; badge.classList.add('status-today'); }
+                else if(status === 'future') { badge.innerText = "FUTURO (PLAN)"; badge.classList.add('status-future'); }
+                else { badge.innerText = "HISTORIAL"; badge.classList.add('status-past'); }
+
+                // 3. Ensure Data Exists
+                if (!state.logs[state.currentDate]) {
+                    state.logs[state.currentDate] = { 
+                        habits: [], 
+                        screen: { total: 0, breakdown: {}, apps: [] } 
+                    };
+                    defaultCategories.forEach(c => state.logs[state.currentDate].screen.breakdown[c] = 0);
+                }
+
+                // 4. Render Components
+                ui.renderTimelineBackground(); // Redraw background (to update current time line)
+                const habitsLog = state.logs[state.currentDate].habits;
+                
+                // Clean Timeline Blocks (background stays)
+                document.querySelectorAll('.timeline-block').forEach(el => el.remove());
+                habitsLog.forEach(log => app.renderTimelineBlock(log));
+
+                const screenData = state.logs[state.currentDate].screen;
+                $('st-total-minutes').value = screenData.total || '';
+                
+                app.renderScreenCategories();
+                app.renderAppsList();
+                
+                // Re-render pool to update draggable state based on date
+                app.renderHabitPool(); 
+
+                // 5. APPLY RESTRICTIONS
+                app.applyDateRestrictions(status);
+            },
+
+            applyDateRestrictions: (status) => {
+                const screenInputs = document.querySelectorAll('#view-screen input');
+                const btnAddApp = $('btn-add-app');
+                
+                if (status === 'past') {
+                    // PAST: Read Only everything
+                    screenInputs.forEach(el => el.disabled = true);
+                    btnAddApp.style.display = 'none';
+                    // Timeline blocks are locked in their render function
+                    // Habit pool dragging disabled in its render function
+                } else if (status === 'future') {
+                    // FUTURE: Timeline Editable (Planning), Screen Time Locked
+                    screenInputs.forEach(el => el.disabled = true);
+                    btnAddApp.style.display = 'none';
+                    // Timeline blocks unlocked
+                    // Habit pool dragging enabled
+                } else {
+                    // TODAY: Everything Open
+                    screenInputs.forEach(el => el.disabled = false);
+                    btnAddApp.style.display = 'inline-flex';
+                }
+            },
+
+            /* --- OVERLAP CHECK HELPER --- */
+            checkOverlap: (start, end, ignoreLogId = null) => {
+                const logs = state.logs[state.currentDate].habits;
+                for (const log of logs) {
+                    if (log.id === ignoreLogId) continue; // Skip self if editing
+                    // Collision Logic: (StartA < EndB) and (EndA > StartB)
+                    if (start < log.end && end > log.start) {
+                        return true; // Overlap found
+                    }
+                }
+                return false;
+            },
+
+            /* --- HABITS MANAGEMENT (CREATE/EDIT/DELETE) --- */
+            
+            // Helper to open modal for Create (null) or Edit (habitId)
+            openManageHabits: (habitId = null) => {
+                $('edit-habit-id').value = habitId || '';
+                
+                if (habitId) {
+                    // Edit Mode
+                    const h = state.habits.find(hab => hab.id === habitId);
+                    if (!h) return;
+                    
+                    $('modal-habit-title').innerText = 'Editar Hábito';
+                    $('new-habit-name').value = h.name;
+                    $('new-habit-type').value = h.type;
+                    $('new-habit-points').value = h.points;
+                    $('new-habit-cat').value = h.cat;
+                    $('new-habit-color').value = h.color;
+                    $('btn-delete-habit').style.display = 'inline-flex';
+                } else {
+                    // Create Mode
+                    $('modal-habit-title').innerText = 'Crear Nuevo Hábito';
+                    $('new-habit-name').value = '';
+                    $('new-habit-type').value = 'positive';
+                    $('new-habit-points').value = 10;
+                    $('new-habit-cat').value = '';
+                    $('new-habit-color').value = '#6366f1';
+                    $('btn-delete-habit').style.display = 'none';
+                }
+                
+                ui.openModal('modal-manage-habits');
+            },
+
+            saveHabitDefinition: () => {
+                const id = $('edit-habit-id').value;
+                const name = $('new-habit-name').value;
+                const type = $('new-habit-type').value;
+                const points = parseInt($('new-habit-points').value);
+                const cat = $('new-habit-cat').value || 'General';
+                const color = $('new-habit-color').value;
+
+                if (!name) return;
+
+                if (id) {
+                    // Update Existing
+                    const habitIndex = state.habits.findIndex(h => h.id === id);
+                    if (habitIndex > -1) {
+                        state.habits[habitIndex] = { id, name, type, points, cat, color };
+                    }
+                } else {
+                    // Create New
+                    state.habits.push({ id: generateId(), name, type, points, cat, color });
+                }
+
+                app.saveData();
+                app.renderHabitPool();
+                // Also refresh timeline in case colors/names changed for existing logs
+                app.loadDayData(); 
+                ui.closeModal('modal-manage-habits');
+            },
+
+            deleteHabitDefinition: () => {
+                const id = $('edit-habit-id').value;
+                if (!id) return;
+                
+                if (confirm('¿Eliminar este hábito? Se mantendrán los registros históricos pero no podrás añadir nuevos.')) {
+                    state.habits = state.habits.filter(h => h.id !== id);
+                    app.saveData();
+                    app.renderHabitPool();
+                    ui.closeModal('modal-manage-habits');
+                }
+            },
+
+            renderHabitPool: () => {
+                const container = $('habit-pool-container');
+                container.innerHTML = '';
+                
+                const status = app.getDateStatus();
+                // Allow dragging only if Today or Future
+                const canDrag = status !== 'past';
+
+                if (!canDrag) container.classList.add('disabled');
+                else container.classList.remove('disabled');
+
+                state.habits.forEach(h => {
+                    const el = document.createElement('div');
+                    el.className = 'draggable-habit';
+                    el.draggable = canDrag; // Control dragging
+                    el.style.borderLeft = `4px solid ${h.color}`;
+                    // Add box shadow glow
+                    el.style.boxShadow = `0 4px 10px ${h.color}33`; 
+                    el.innerHTML = `
+                        <span class="habit-dot" style="background:${h.color}"></span>
+                        <span>${h.name}</span>
+                        <span class="text-xs" style="opacity:0.7">(${h.points}p)</span>
+                        <i class="fas fa-pencil-alt habit-edit-hint"></i>
+                    `;
+                    
+                    // Click to Edit
+                    el.onclick = (e) => {
+                        // Prevent edit if clicking mainly to drag/focus, but here simplest is click opens edit.
+                        app.openManageHabits(h.id);
+                    };
+
+                    if(canDrag) {
+                        el.ondragstart = (e) => {
+                            // Don't trigger click when dragging
+                            // e.stopPropagation(); 
+                            e.dataTransfer.setData('habitId', h.id);
+                        };
+                    }
+                    
+                    container.appendChild(el);
+                });
+            },
+
+            /* --- DROP & MODAL LOGIC --- */
+            handleDrop: (e) => {
+                e.preventDefault();
+                // Security check: Past days accept no drops
+                if (app.getDateStatus() === 'past') return;
+
+                const habitId = e.dataTransfer.getData('habitId');
+                if (!habitId) return;
+
+                const rect = $('timeline-droppable').getBoundingClientRect();
+                const offsetY = e.clientY - rect.top + $('app-container').scrollTop; 
+                
+                let startMins = Math.floor(offsetY);
+                startMins = Math.round(startMins / 15) * 15;
+                if (startMins < 0) startMins = 0;
+                if (startMins > 1380) startMins = 1380;
+
+                const endMins = startMins + 60; 
+
+                // Pre-check collision slightly, though user confirms in modal
+                // If it collides heavily, user will see in modal time inputs or fail on confirm.
+                
+                state.pendingDrop = { habitId, startMins, endMins };
+
+                $('drop-habit-id').value = habitId;
+                $('drop-start-time').value = minsToTime(startMins);
+                $('drop-end-time').value = minsToTime(endMins);
+                ui.openModal('modal-drop-log');
+            },
+
+            confirmDropLog: () => {
+                if (!state.pendingDrop) return;
+                
+                const sVal = $('drop-start-time').value;
+                const eVal = $('drop-end-time').value;
+                
+                const finalStart = timeToMins(sVal);
+                const finalEnd = timeToMins(eVal);
+
+                if (finalEnd <= finalStart) {
+                    alert("La hora de fin debe ser mayor a la de inicio.");
+                    return;
+                }
+
+                // COLLISION CHECK
+                if (app.checkOverlap(finalStart, finalEnd)) {
+                    alert("⚠️ Conflicto de Horario: Ya existe una actividad en este rango. Por favor ajusta la hora.");
+                    return;
+                }
+
+                const log = {
+                    id: generateId(),
+                    habitId: state.pendingDrop.habitId,
+                    start: finalStart,
+                    end: finalEnd
+                };
+
+                state.logs[state.currentDate].habits.push(log);
+                app.saveData();
+                app.renderTimelineBlock(log);
+                
+                state.pendingDrop = null;
+                ui.closeModal('modal-drop-log');
+            },
+
+            renderTimelineBlock: (log) => {
+                const habit = state.habits.find(h => h.id === log.habitId);
+                // If habit was deleted, maybe still show it? Or skip.
+                // For integrity, better to keep showing if ID exists, but if def is gone, use placeholder
+                const habitName = habit ? habit.name : 'Hábito Eliminado';
+                const habitColor = habit ? habit.color : '#666';
+
+                const status = app.getDateStatus();
+                // Past days: Locked. Today/Future: Editable.
+                const isLocked = status === 'past';
+
+                const block = document.createElement('div');
+                block.className = `timeline-block ${isLocked ? 'locked' : ''}`;
+                block.style.top = log.start + 'px';
+                block.style.height = Math.max(30, (log.end - log.start)) + 'px';
+                
+                // Enhanced Visual Style
+                block.style.borderColor = `${habitColor}88`; // Semi transparent border
+                block.style.background = `linear-gradient(135deg, ${habitColor}44, ${habitColor}11)`;
+                block.style.boxShadow = `0 4px 15px ${habitColor}22`;
+                
+                block.innerHTML = `
+                    <div style="font-weight:bold; font-size:0.8rem; color:#fff; text-shadow:0 1px 2px rgba(0,0,0,0.5);">${habitName}</div>
+                    <div class="text-xs" style="color:rgba(255,255,255,0.8)">${minsToTime(log.start)} - ${minsToTime(log.end)}</div>
+                `;
+                
+                if (!isLocked) {
+                    block.onclick = () => app.openEditLogModal(log);
+                }
+                
+                $('timeline-droppable').appendChild(block);
+            },
+
+            /* --- EDIT LOGS --- */
+            openEditLogModal: (log) => {
+                const habit = state.habits.find(h => h.id === log.habitId);
+                const habitName = habit ? habit.name : 'Hábito';
+                const habitColor = habit ? habit.color : '#fff';
+                
+                $('edit-log-title').innerHTML = `Editar <span style="color:${habitColor}">${habitName}</span>`;
+                $('edit-log-id').value = log.id;
+                $('edit-log-start').value = minsToTime(log.start);
+                $('edit-log-end').value = minsToTime(log.end);
+                ui.openModal('modal-edit-log');
+            },
+
+            saveLogEdit: () => {
+                const id = $('edit-log-id').value;
+                const startVal = $('edit-log-start').value;
+                const endVal = $('edit-log-end').value;
+                const sMins = timeToMins(startVal);
+                const eMins = timeToMins(endVal);
+
+                if (eMins <= sMins) {
+                    alert("La hora de fin debe ser mayor a la de inicio.");
+                    return;
+                }
+
+                // COLLISION CHECK
+                if (app.checkOverlap(sMins, eMins, id)) {
+                    alert("⚠️ Conflicto de Horario: Este cambio se empalma con otra actividad.");
+                    return;
+                }
+
+                const logs = state.logs[state.currentDate].habits;
+                const log = logs.find(l => l.id === id);
+                
+                if (log) {
+                    log.start = sMins;
+                    log.end = eMins;
+                    app.saveData();
+                    app.loadDayData(); // Re-render to update positions
+                    ui.closeModal('modal-edit-log');
+                }
+            },
+
+            deleteLog: () => {
+                const id = $('edit-log-id').value;
+                state.logs[state.currentDate].habits = state.logs[state.currentDate].habits.filter(l => l.id !== id);
+                app.saveData();
+                app.loadDayData();
+                ui.closeModal('modal-edit-log');
+            },
+
+            /* --- SCREEN TIME --- */
+            renderScreenCategories: () => {
+                const container = $('st-categories-container');
+                container.innerHTML = '';
+                const data = state.logs[state.currentDate].screen.breakdown || {};
+                const isDisabled = app.getDateStatus() !== 'today'; // Only editable TODAY
+                
+                defaultCategories.forEach(cat => {
+                    const val = data[cat] || 0;
+                    const div = document.createElement('div');
+                    div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:12px;';
+                    
+                    // Input construction
+                    const inputHtml = `<input type="number" 
+                        style="width:80px; margin:0; padding:8px;" 
+                        value="${val}" 
+                        onchange="app.updateCategory('${cat}', this.value)"
+                        ${isDisabled ? 'disabled' : ''}>`;
+
+                    div.innerHTML = `
+                        <span style="font-size:0.9rem;">${cat}</span>
+                        ${inputHtml}
+                    `;
+                    container.appendChild(div);
+                });
+            },
+
+            updateScreenTimeMain: () => {
+                const val = parseInt($('st-total-minutes').value) || 0;
+                state.logs[state.currentDate].screen.total = val;
+                app.saveData();
+            },
+
+            updateCategory: (cat, val) => {
+                state.logs[state.currentDate].screen.breakdown[cat] = parseInt(val) || 0;
+                app.saveData();
+            },
+
+            renderQuickAdd: () => {
+                const container = $('quick-add-apps');
+                container.innerHTML = '';
+                const popular = ['Facebook', 'Instagram', 'WhatsApp', 'YouTube', 'TikTok', 'Spotify', 'ChatGPT'];
+                
+                popular.forEach(name => {
+                    const chip = document.createElement('div');
+                    chip.className = 'quick-add-chip';
+                    chip.innerHTML = `${name}`;
+                    chip.onclick = () => {
+                        $('app-log-name').value = name;
+                        $('app-log-mins').focus();
+                    };
+                    container.appendChild(chip);
+                });
+            },
+
+            addScreenApp: () => {
+                const name = $('app-log-name').value;
+                const mins = parseInt($('app-log-mins').value);
+                if (name && mins) {
+                    state.logs[state.currentDate].screen.apps.push({ name, mins });
+                    state.logs[state.currentDate].screen.apps.sort((a,b) => b.mins - a.mins);
+                    app.saveData();
+                    app.renderAppsList();
+                    ui.closeModal('modal-add-app');
+                    $('app-log-name').value = ''; $('app-log-mins').value = '';
+                }
+            },
+
+            renderAppsList: () => {
+                const list = $('st-apps-list');
+                list.innerHTML = '';
+                const apps = state.logs[state.currentDate].screen.apps || [];
+                const isEditable = app.getDateStatus() === 'today';
+                
+                if(apps.length === 0) {
+                    list.innerHTML = '<div class="text-sm" style="text-align:center; padding:10px;">Sin aplicaciones registradas</div>';
+                    return;
+                }
+
+                apps.slice(0, 10).forEach((a, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'app-row';
+                    div.style.cssText = 'display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:center;';
+                    
+                    const iconHtml = getAppIcon(a.name);
+                    const deleteIcon = isEditable ? `<i class="fas fa-trash text-xs" style="cursor:pointer; opacity:0.5;" onclick="app.removeApp(${i})"></i>` : '';
+                    
+                    div.innerHTML = `
+                        ${iconHtml}
+                        <span style="font-weight:600;">${a.name}</span>
+                        <span class="text-sm">${a.mins}m</span>
+                        ${deleteIcon}
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            removeApp: (index) => {
+                state.logs[state.currentDate].screen.apps.splice(index, 1);
+                app.saveData();
+                app.renderAppsList();
+            },
+
+            /* --- STATS & CHARTS --- */
+            calculateDailyScore: (logData) => {
+                if(!logData || !logData.habits) return 0;
+                let score = 0;
+                logData.habits.forEach(log => {
+                    const h = state.habits.find(hab => hab.id === log.habitId);
+                    if(h) {
+                        if(h.type === 'positive') score += h.points;
+                        else score -= h.points;
+                    }
+                });
+                return score;
+            },
+
+            renderReports: () => {
+                const data = state.logs[state.currentDate];
+                const score = app.calculateDailyScore(data);
+                
+                $('report-score-val').innerText = score;
+                $('report-score-val').style.color = score >= 0 ? 'var(--success)' : 'var(--danger)';
+                
+                const tScreen = data.screen.total;
+                $('report-screen-val').innerText = `${Math.floor(tScreen/60)}h ${tScreen%60}m`;
+                
+                let txt = "Comienza registrando tus hábitos.";
+                if(data.habits.length > 0 || tScreen > 0) {
+                    if(score > 20 && tScreen < 120) txt = "🔥 ¡Día muy productivo!";
+                    else if(score > 0) txt = "✅ Vas por buen camino.";
+                    else if(tScreen > 240) txt = "⚠️ Revisa tu tiempo en pantalla.";
+                    else txt = "📉 Enfócate en recuperar puntos.";
+                }
+                $('daily-analysis-text').innerText = txt;
+
+                app.drawCharts(data.screen.breakdown);
+            },
+
+            drawCharts: (cats) => {
+                if(app.chartTrend) app.chartTrend.destroy();
+                if(app.chartScreen) app.chartScreen.destroy();
+
+                const labels = [];
+                const scores = [];
+                const d = new Date(state.currentDate);
+                // Actually need to base trend on "Today" relative, or selected date relative?
+                // Usually trend is "Last 7 days ending on Selected Date".
+                
+                const [y, m, day] = state.currentDate.split('-').map(Number);
+                const selectedDate = new Date(y, m - 1, day);
+
+                for (let i = 6; i >= 0; i--) {
+                    const tempD = new Date(selectedDate);
+                    tempD.setDate(selectedDate.getDate() - i);
+                    const k = formatDate(tempD);
+                    labels.push(tempD.toLocaleDateString('es-ES', {weekday:'short'}));
+                    const dayLog = state.logs[k];
+                    scores.push(dayLog ? app.calculateDailyScore(dayLog) : 0);
+                }
+
+                // IMPORTANT: Disable Animation for PDF Export Accuracy
+                const commonOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: { duration: 0 }, 
+                    hover: { animationDuration: 0 },
+                    responsiveAnimationDuration: 0,
+                    plugins: { legend: { display: false } }
+                };
+
+                const ctx1 = $('chart-trend').getContext('2d');
+                app.chartTrend = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Puntaje',
+                            data: scores,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                        }
+                    }
+                });
+
+                const ctx2 = $('chart-screen').getContext('2d');
+                app.chartScreen = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: defaultCategories,
+                        datasets: [{
+                            label: 'Minutos',
+                            data: defaultCategories.map(c => cats[c] || 0),
+                            backgroundColor: ['#ef4444', '#10b981', '#f59e0b'],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        indexAxis: 'y',
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                            y: { grid: { display: false }, ticks: { color: '#fff' } }
+                        }
+                    }
+                });
+            },
+
+            /* --- FIXED IMAGE EXPORT LOGIC --- */
+            exportImage: () => {
+                // 1. Prepare Data
+                const data = state.logs[state.currentDate];
+                const score = app.calculateDailyScore(data);
+                const tScreen = data.screen.total;
+                
+                // Parse date for title
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d);
+                const dateStr = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                
+                // 2. Populate Hidden Template
+                const container = $('pdf-export-container');
+                
+                let trendImg = "", screenImg = "";
+                try {
+                     trendImg = app.chartTrend.toBase64Image();
+                     screenImg = app.chartScreen.toBase64Image();
+                } catch(e) { console.error("Chart error", e); }
+
+                container.innerHTML = `
+                    <div class="pdf-header">
+                        <div class="pdf-title">
+                            <h1>Informe de Rendimiento</h1>
+                            <p>${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</p>
+                        </div>
+                        <!-- Header Logo -->
+                        <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" class="pdf-logo" alt="Logo">
+                    </div>
+
+                    <div class="pdf-grid">
+                        <div class="pdf-card">
+                            <h3>Puntaje del Día</h3>
+                            <div class="value" style="color:${score >= 0 ? '#10b981' : '#ef4444'}">${score} pts</div>
+                        </div>
+                        <div class="pdf-card">
+                            <h3>Tiempo en Pantalla</h3>
+                            <div class="value">${Math.floor(tScreen/60)}h ${tScreen%60}m</div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-grid">
+                        <div class="pdf-section">
+                            <h2>Tendencia Semanal</h2>
+                            <img src="${trendImg}" class="pdf-chart-img" style="display:block; width:100%;">
+                        </div>
+                        <div class="pdf-section">
+                            <h2>Distribución Digital</h2>
+                            <img src="${screenImg}" class="pdf-chart-img" style="display:block; width:100%;">
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2>Desglose de Tiempo en Pantalla</h2>
+                        <table class="pdf-table">
+                            <thead>
+                                <tr><th>Categoría</th><th>Tiempo</th></tr>
+                            </thead>
+                            <tbody>
+                                ${defaultCategories.map(c => `
+                                    <tr>
+                                        <td>${c}</td>
+                                        <td>${data.screen.breakdown[c] || 0} min</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2>Top Aplicaciones</h2>
+                        <table class="pdf-table">
+                            <thead>
+                                <tr><th>App</th><th>Tiempo</th></tr>
+                            </thead>
+                            <tbody>
+                                ${data.screen.apps.length > 0 ? data.screen.apps.slice(0,5).map((a, i) => {
+                                    const icon = getAppIcon(a.name);
+                                    // For export, inline the styles to ensure color render
+                                    const renderedIcon = icon.replace('class="app-icon-wrapper"', 'class="app-icon-wrapper" style="display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border-radius:8px; margin-right:10px; color:white; font-size:16px;' + (icon.match(/background:[^;]+/) || [''])[0] + '"');
+                                    
+                                    return `
+                                    <tr>
+                                        <td style="display:flex; align-items:center;">
+                                            ${renderedIcon}
+                                            <span style="font-weight:600; font-size:1.1em; color:#1e293b;">${a.name}</span>
+                                        </td>
+                                        <td style="font-weight:bold;">${a.mins} min</td>
+                                    </tr>
+                                `}).join('') : '<tr><td colspan="2" style="text-align:center; padding:20px;">Sin aplicaciones registradas</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- BRAND LOGO BOTTOM RIGHT -->
+                    <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" class="pdf-footer-logo" alt="Logo Footer">
+                `;
+
+                // 3. Make Container Visible for Capture
+                container.classList.add('pdf-rendering');
+
+                // 4. Wait, Capture, Download
+                setTimeout(() => {
+                    html2canvas(container, {
+                        scale: 3, // High quality
+                        useCORS: true, // Crucial for external images
+                        allowTaint: true,
+                        backgroundColor: '#ffffff'
+                    }).then(canvas => {
+                        // Create download link
+                        const link = document.createElement('a');
+                        link.download = `Reporte_ZenTrack_${state.currentDate}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        // Cleanup
+                        container.classList.remove('pdf-rendering');
+                    }).catch(err => {
+                        console.error(err);
+                        alert("Error al generar imagen. Verifica tu conexión.");
+                        container.classList.remove('pdf-rendering');
+                    });
+                }, 500); 
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', app.init);
     </script>
 </body>
 </html>

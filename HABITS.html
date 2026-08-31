@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>SUMA+ HABITS</title>
+    
+    <!-- Librerías cargadas con 'defer' para que NUNCA bloqueen la pantalla en blanco -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- CORE THEME & VARIABLES --- */
+        :root {
+            --bg-body: #0b0f19;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-card: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --success: #10b981;
+            --danger: #ef4444;
+            --radius-lg: 20px;
+            --radius-md: 12px;
+            --header-height: 60px;
+            --nav-height: 65px; 
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-body);
+            background-image: var(--bg-gradient);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #app-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+            padding-bottom: calc(var(--nav-height) + var(--safe-bottom));
+        }
+
+        .view {
+            display: none;
+            position: absolute;
+            inset: 0;
+            padding: 12px;
+            padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+        .view.active { display: flex; flex-direction: column; }
+
+        .card {
+            background: var(--glass-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            flex-shrink: 0;
+        }
+
+        /* --- HABITS VIEW --- */
+        #view-habits .top-card { padding: 12px; margin-bottom: 12px; }
+        #view-habits .timeline-card {
+            flex: 1; min-height: 0; display: flex; flex-direction: column; 
+            padding: 0; margin-bottom: 0; overflow: hidden;
+        }
+        .timeline-scroll-area { flex: 1; overflow-y: auto; scroll-behavior: smooth; position: relative; }
+        .timeline-scroll-area::-webkit-scrollbar { width: 4px; }
+        .timeline-scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+        /* --- TYPOGRAPHY & UI --- */
+        h1, h2, h3, h4 { color: #fff; font-weight: 700; letter-spacing: -0.02em; }
+        h3 { font-size: 1.15rem; margin-bottom: 10px; }
+        .text-sm { font-size: 0.85rem; color: var(--text-muted); }
+        .text-xs { font-size: 0.75rem; color: var(--text-muted); }
+
+        .btn {
+            background: var(--primary); color: white; border: none; padding: 12px 20px;
+            border-radius: var(--radius-md); font-weight: 600; font-size: 0.95rem;
+            cursor: pointer; box-shadow: 0 4px 15px var(--primary-glow);
+            transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-outline { background: transparent; border: 1px solid var(--glass-border); box-shadow: none; color: var(--text-muted); }
+        .btn-icon { padding: 6px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); box-shadow: none; }
+        .btn:disabled, .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+
+        input, select {
+            width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border);
+            color: white; padding: 12px; border-radius: 10px; font-family: inherit;
+            margin-bottom: 12px; font-size: 16px;
+        }
+        input:focus { outline: none; border-color: var(--primary); }
+        label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; }
+
+        /* --- HEADER --- */
+        header {
+            padding: 0 16px; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--glass-border); height: var(--header-height); flex-shrink: 0;
+            z-index: 50;
+        }
+        .header-left { display: flex; flex-direction: column; }
+        .app-title { font-weight: 800; font-size: 1rem; color: #fff; letter-spacing: 0.5px; }
+        .app-title span { color: var(--primary); }
+        .logo-img { height: 35px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,255,255,0.2)); }
+        .date-nav { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+        .current-date { font-weight: 700; font-size: 0.9rem; }
+        .date-status-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; margin-left: 6px; font-weight: 800; }
+        .status-today { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-future { background: rgba(99, 102, 241, 0.2); color: var(--primary); }
+        .status-past { background: rgba(148, 163, 184, 0.2); color: var(--text-muted); }
+
+        /* --- NAV BOTTOM --- */
+        nav.bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: calc(var(--nav-height) + var(--safe-bottom));
+            background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; 
+            align-items: flex-start; padding-top: 10px; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.4);
+        }
+        .nav-item { color: var(--text-muted); display: flex; flex-direction: column; align-items: center; font-size: 0.65rem; gap: 4px; cursor: pointer; transition: all 0.3s; width: 30%; }
+        .nav-item i { font-size: 1.3rem; transition: transform 0.2s; }
+        .nav-item.active { color: #fff; }
+        .nav-item.active i { transform: translateY(-3px); color: var(--primary); text-shadow: 0 0 15px var(--primary); }
+
+        /* --- HABIT POOL --- */
+        .habit-pool { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
+        .draggable-habit {
+            background: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px;
+            white-space: nowrap; font-size: 0.85rem; font-weight: 600; cursor: grab;
+            border: 1px solid transparent; user-select: none; display: flex; align-items: center; gap: 6px; position: relative;
+        }
+        .draggable-habit:active { transform: scale(0.98); }
+        .habit-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .habit-edit-btn { background: rgba(255,255,255,0.1); border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-muted); cursor: pointer; margin-left: 4px; transition: all 0.2s; }
+        .habit-edit-btn:active { background: var(--primary); color: white; }
+
+        /* --- TIMELINE --- */
+        .timeline-wrapper { position: relative; background: rgba(11, 15, 25, 0.4); height: 1440px; background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px); background-size: 100% 60px; }
+        .current-time-line { position: absolute; left: 0; width: 100%; height: 2px; background: var(--danger); z-index: 20; pointer-events: none; display: flex; align-items: center; }
+        .current-time-line::before { content: ''; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; margin-left: -4px; }
+        .time-slot { height: 60px; position: relative; display: flex; align-items: flex-start; }
+        .time-label { width: 45px; text-align: right; padding-right: 8px; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; transform: translateY(-50%); margin-top: 0; }
+        .timeline-block {
+            position: absolute; left: 55px; right: 10px; border-radius: 10px; padding: 4px 10px; font-size: 0.85rem; color: white;
+            overflow: hidden; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px); display: flex; flex-direction: column; justify-content: center; z-index: 10;
+        }
+
+        /* --- CHECKLIST UI --- */
+        .checklist-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; }
+        .checklist-item.done span { text-decoration: line-through; opacity: 0.5; }
+        .checklist-checkbox { width: 18px; height: 18px; border-radius: 4px; border: 2px solid var(--primary); display: flex; align-items: center; justify-content: center; cursor: pointer; margin-right: 10px; }
+        .checklist-item.done .checklist-checkbox { background: var(--primary); }
+        .checklist-item.done .checklist-checkbox::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; font-size: 10px; color: white; }
+
+        /* --- SMART HEATMAP UI --- */
+        .heatmap-container { display: flex; flex-direction: column; gap: 5px; }
+        .heatmap-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; font-size: 0.6rem; color: var(--text-muted); font-weight: bold; }
+        .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+        .heatmap-cell {
+            aspect-ratio: 1; border-radius: 6px; background: rgba(255,255,255,0.05);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.65rem; color: rgba(255,255,255,0.5); font-weight: 600;
+            transition: transform 0.2s; cursor: pointer;
+        }
+        .heatmap-cell:hover { transform: scale(1.1); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .heatmap-cell.empty { background: transparent; pointer-events: none; color: transparent; }
+        .heatmap-cell.level-1 { background: rgba(16, 185, 129, 0.2); color: rgba(255,255,255,0.7); }
+        .heatmap-cell.level-2 { background: rgba(16, 185, 129, 0.5); color: #fff; }
+        .heatmap-cell.level-3 { background: rgba(16, 185, 129, 0.8); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .heatmap-cell.level-4 { background: #10b981; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+        .heatmap-cell.negative { background: rgba(239, 68, 68, 0.5); color: #fff; }
+
+        /* --- FOCUS MODE UI --- */
+        #focus-overlay {
+            position: fixed; inset: 0; background: var(--bg-body); z-index: 9999; display: none;
+            flex-direction: column; align-items: center; justify-content: center; padding: 20px;
+        }
+        #focus-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+        .focus-circle {
+            width: 250px; height: 250px; border-radius: 50%; border: 8px solid var(--primary);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 0 50px var(--primary-glow); margin-bottom: 40px;
+        }
+        .focus-timer-text { font-size: 3.5rem; font-weight: 800; color: white; font-variant-numeric: tabular-nums; }
+        .focus-task-name { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 30px; text-align: center; }
+
+        /* --- STATS & MODALS --- */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .big-stat { background: rgba(255,255,255,0.03); border-radius: var(--radius-md); padding: 16px; text-align: center; border: 1px solid var(--glass-border); }
+        .stat-number { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin: 2px 0; text-shadow: 0 0 20px rgba(99,102,241,0.3); }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 200; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.open { display: flex; opacity: 1; }
+        .modal-content { background: #1e293b; border: 1px solid var(--glass-border); width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; padding: 20px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s; }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        .app-icon-wrapper { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; margin-right: 10px; color: white; font-size: 16px; }
+        
+        #pdf-export-container { position: fixed; top: 0; left: -10000px; width: 794px; background: #ffffff; color: #1e293b; padding: 40px; font-family: inherit; z-index: 9999; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- CABECERA -->
+    <header>
+        <div class="header-left">
+            <div class="app-title">SUMA+ <span>HABITS</span></div>
+            <div class="date-nav">
+                <button class="btn-icon btn-outline" style="width:24px; height:24px;" onclick="app.changeDate(-1)"><i class="fas fa-chevron-left" style="font-size:0.7rem;"></i></button>
+                <div style="display:flex; align-items:center;">
+                    <span id="current-date-display" class="current-date">Hoy</span>
+                    <span id="date-status-badge" class="date-status-badge"></span>
+                </div>
+                <button class="btn-icon btn-outline" style="width:24px; height:24px;" onclick="app.changeDate(1)"><i class="fas fa-chevron-right" style="font-size:0.7rem;"></i></button>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <button id="btn-notifications" class="btn-icon btn-outline" style="width:35px; height:35px;" onclick="app.requestNotifications()" title="Activar notificaciones">
+                <i class="fas fa-bell"></i>
+            </button>
+            <img src="https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png" alt="Logo" class="logo-img">
+        </div>
+    </header>
+
+    <div id="app-container">
+        
+        <!-- VISTA HÁBITOS -->
+        <div id="view-habits" class="view active">
+            <div class="card top-card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                    <h3 style="margin:0; font-size:1.05rem; display:flex; align-items:center; gap:8px;">
+                        Mis Hábitos
+                    </h3>
+                    <button class="btn btn-sm" style="padding: 6px 12px; font-size: 0.8rem;" onclick="app.openManageHabits()">
+                        <i class="fas fa-plus"></i> Añadir
+                    </button>
+                </div>
+                <div id="habit-pool-container" class="habit-pool"></div>
+            </div>
+
+            <div class="card timeline-card">
+                <div class="timeline-scroll-area" id="timeline-scroll">
+                    <div class="timeline-wrapper" id="timeline-droppable"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA PANTALLA -->
+        <div id="view-screen" class="view">
+            <div class="card">
+                <h3><i class="fas fa-mobile-alt" style="color:var(--primary); margin-right:8px;"></i> Tiempo en Pantalla</h3>
+                <div style="margin-top:15px;">
+                    <label>Tiempo Total (Minutos)</label>
+                    <input type="number" id="st-total-minutes" placeholder="0" style="font-size: 1.5rem; font-weight:bold; color:var(--primary);" onchange="app.updateScreenTimeMain()">
+                </div>
+                <h4 style="margin-top:20px; font-size: 1rem;">Clasificación</h4>
+                <div id="st-categories-container"></div>
+            </div>
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Top Aplicaciones</h3>
+                    <button class="btn btn-sm btn-outline" onclick="ui.openModal('modal-add-app')"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="st-apps-list"></div>
+            </div>
+        </div>
+
+        <!-- VISTA REPORTES -->
+        <div id="view-reports" class="view">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3>Análisis Diario</h3>
+                    <button class="btn btn-sm" style="background:var(--success);" onclick="app.exportImage()">
+                        <i class="fas fa-image"></i> PDF
+                    </button>
+                </div>
+                <p id="daily-analysis-text" class="text-sm" style="margin-top:10px; font-style: italic; opacity: 0.8;"></p>
+            </div>
+
+            <div class="stat-grid">
+                <div class="big-stat">
+                    <div class="text-xs">Puntaje Hoy</div>
+                    <div class="stat-number" id="report-score-val">0</div>
+                </div>
+                <div class="big-stat">
+                    <div class="text-xs">Tiempo Pantalla</div>
+                    <div class="stat-number" id="report-screen-val" style="color: #c084fc;">0h</div>
+                </div>
+            </div>
+
+            <!-- SMART HEATMAP DE RACHAS (CALENDARIO) -->
+            <div class="card">
+                <h4>Consistencia (Últimos 30 días)</h4>
+                
+                <div class="heatmap-container" style="margin-top:15px;">
+                    <div class="heatmap-weekdays">
+                        <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                    </div>
+                    <div id="heatmap-grid" class="heatmap-grid"></div>
+                </div>
+                <p class="text-xs" style="margin-top:12px; text-align:center;">Toca un día para ver detalles.</p>
+            </div>
+
+            <div class="card">
+                <h4>Tendencia Semanal (Puntos)</h4>
+                <div class="chart-container"><canvas id="chart-trend"></canvas></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PANTALLA MODO ENFOQUE (POMODORO) -->
+    <div id="focus-overlay">
+        <h2 id="focus-title" class="focus-task-name">Modo Enfoque</h2>
+        <div class="focus-circle" id="focus-circle-ui">
+            <div class="focus-timer-text" id="focus-timer-display">00:00</div>
+        </div>
+        <p class="text-sm" style="margin-bottom: 30px;">Mantén la app abierta para medir tu tiempo.</p>
+        <button class="btn btn-outline" style="border-color: var(--danger); color: white;" onclick="app.stopFocusMode()">Finalizar Sesión</button>
+    </div>
+
+    <!-- MODALS EXISTENTES -->
+    <div id="modal-manage-habits" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-habit-title">Diseñar Hábito</h3>
+            <input type="hidden" id="edit-habit-id">
+            <label>Nombre</label>
+            <input type="text" id="new-habit-name" placeholder="Ej: Leer, Meditar...">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div><label>Tipo</label><select id="new-habit-type"><option value="positive">Positivo (+)</option><option value="negative">Negativo (-)</option></select></div>
+                <div><label>Puntos</label><input type="number" id="new-habit-points" value="10"></div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div><label>Categoría</label><input type="text" id="new-habit-cat" placeholder="Salud, Mente..."></div>
+                <div><label>Color</label><input type="color" id="new-habit-color" value="#6366f1" style="height: 50px; padding: 5px; cursor: pointer;"></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:20px;">
+                <button id="btn-delete-habit" class="btn btn-danger" style="display:none;" onclick="app.deleteHabitDefinition()"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-outline" style="flex:1" onclick="ui.closeModal('modal-manage-habits')">Cancelar</button>
+                <button class="btn" style="flex:2" onclick="app.saveHabitDefinition()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-drop-log" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Agendar Actividad</h3>
+            <input type="hidden" id="drop-habit-id">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top:15px;">
+                <div><label>Inicio</label><input type="time" id="drop-start-time"></div>
+                <div><label>Fin</label><input type="time" id="drop-end-time"></div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button class="btn btn-outline" onclick="ui.closeModal('modal-drop-log')">Cancelar</button>
+                <button class="btn" style="flex:1" onclick="app.confirmDropLog()">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT LOG + CHECKLIST + FOCUS BUTTON -->
+    <div id="modal-edit-log" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="edit-log-title">Editar</h3>
+            <input type="hidden" id="edit-log-id">
+            
+            <button id="btn-start-focus" class="btn" style="width: 100%; margin-bottom: 15px; background: var(--success);" onclick="app.startFocusMode()">
+                <i class="fas fa-play"></i> Iniciar Modo Enfoque
+            </button>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <div><label>Inicio</label><input type="time" id="edit-log-start"></div>
+                <div><label>Fin</label><input type="time" id="edit-log-end"></div>
+            </div>
+
+            <!-- SECCIÓN CHECKLIST -->
+            <div style="margin-top: 15px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px;">
+                <h4 style="font-size: 0.9rem; margin-bottom: 10px;">Sub-tareas / Checklist</h4>
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <input type="text" id="checklist-new-input" placeholder="Agregar tarea..." style="margin:0;">
+                    <button class="btn btn-outline" style="padding:0 15px;" onclick="app.addChecklistItem()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="checklist-items-container">
+                    <!-- JS rellena aquí -->
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; margin-top:20px;">
+                <button class="btn btn-danger" onclick="app.deleteLog()"><i class="fas fa-trash"></i></button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-outline" onclick="ui.closeModal('modal-edit-log')">Cancelar</button>
+                    <button class="btn" onclick="app.saveLogEdit()">Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-add-app" class="modal-overlay">
+        <div class="modal-content">
+            <h3>Registrar App</h3>
+            <label style="margin-top:15px;">Nombre de la App</label>
+            <input type="text" id="app-log-name" placeholder="Ej: Instagram...">
+            <label>Minutos</label>
+            <input type="number" id="app-log-mins" placeholder="Ej: 45">
+            <div style="display:flex; gap:10px;">
+                <button class="btn" style="flex:1" onclick="app.addScreenApp()">Agregar</button>
+                <button class="btn btn-outline" onclick="ui.closeModal('modal-add-app')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="ui.switchView('view-habits', this)"><i class="fas fa-calendar-check"></i><span>Hábitos</span></div>
+        <div class="nav-item" onclick="ui.switchView('view-screen', this)"><i class="fas fa-stopwatch"></i><span>Pantalla</span></div>
+        <div class="nav-item" onclick="ui.switchView('view-reports', this)"><i class="fas fa-chart-line"></i><span>Reportes</span></div>
+    </nav>
+
+    <script>
+        // Limpiador de seguridad: Elimina Service Workers antiguos que bloqueaban tu pantalla
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) registration.unregister();
+            });
+        }
+
+        const generateId = () => Math.random().toString(36).substr(2, 9);
+        const formatDate = (date) => {
+            const tzoffset = date.getTimezoneOffset() * 60000; 
+            return (new Date(date - tzoffset)).toISOString().split('T')[0];
+        };
+        const minsToTime = (m) => `${Math.floor(m / 60).toString().padStart(2, '0')}:${Math.floor(m % 60).toString().padStart(2, '0')}`;
+        const timeToMins = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+
+        const defaultCategories = ['Redes Sociales', 'Productividad y Finanzas', 'Creatividad'];
+
+        const state = {
+            currentDate: formatDate(new Date()),
+            habits: [],
+            logs: {},
+            pendingDrop: null,
+            editingLogId: null,
+            focusInterval: null,
+            focusSecondsLeft: 0
+        };
+
+        // Extracción segura de datos
+        try {
+            state.habits = JSON.parse(localStorage.getItem('zt_habits')) || [];
+            state.logs = JSON.parse(localStorage.getItem('zt_logs')) || {};
+        } catch(e) { console.error("Data error", e); }
+
+        const $ = (id) => document.getElementById(id);
+
+        const ui = {
+            switchView: (viewId, navEl) => {
+                document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+                $(viewId).classList.add('active');
+                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+                navEl.classList.add('active');
+                if (viewId === 'view-reports') setTimeout(() => app.renderReports(), 100);
+            },
+            openModal: (id) => $(id).classList.add('open'),
+            closeModal: (id) => $(id).classList.remove('open'),
+            renderTimelineBackground: () => {
+                const container = $('timeline-droppable');
+                container.innerHTML = '';
+                if(app.getDateStatus() === 'today') {
+                    const now = new Date();
+                    const mins = now.getHours() * 60 + now.getMinutes();
+                    const line = document.createElement('div');
+                    line.className = 'current-time-line';
+                    line.style.top = mins + 'px';
+                    container.appendChild(line);
+                }
+                for (let i = 0; i < 24; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'time-slot';
+                    const label = document.createElement('span');
+                    label.className = 'time-label'; label.innerText = `${i}:00`;
+                    slot.appendChild(label); container.appendChild(slot);
+                }
+                container.ondragover = (e) => e.preventDefault();
+                container.ondrop = (e) => app.handleDrop(e);
+            }
+        };
+
+        const app = {
+            init: () => {
+                try {
+                    ui.renderTimelineBackground();
+                    app.renderHabitPool();
+                    app.loadDayData(); 
+                    app.initNotifications();
+                } catch(e) { console.error(e); }
+            },
+            saveData: () => {
+                localStorage.setItem('zt_habits', JSON.stringify(state.habits));
+                localStorage.setItem('zt_logs', JSON.stringify(state.logs));
+            },
+            getDateStatus: () => {
+                const today = formatDate(new Date());
+                if (state.currentDate < today) return 'past';
+                if (state.currentDate > today) return 'future';
+                return 'today';
+            },
+            changeDate: (offset) => {
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const date = new Date(y, m - 1, d);
+                date.setDate(date.getDate() + offset);
+                state.currentDate = formatDate(date);
+                app.loadDayData();
+            },
+            loadDayData: () => {
+                const status = app.getDateStatus();
+                const [y, m, d] = state.currentDate.split('-').map(Number);
+                const dateObj = new Date(y, m - 1, d);
+                const display = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+                $('current-date-display').innerText = display.charAt(0).toUpperCase() + display.slice(1);
+
+                const badge = $('date-status-badge');
+                badge.className = 'date-status-badge'; 
+                if(status === 'today') { badge.innerText = "HOY"; badge.classList.add('status-today'); }
+                else if(status === 'future') { badge.innerText = "PLAN"; badge.classList.add('status-future'); }
+                else { badge.innerText = "HISTORIAL"; badge.classList.add('status-past'); }
+
+                if (!state.logs[state.currentDate]) {
+                    state.logs[state.currentDate] = { habits: [], screen: { total: 0, breakdown: {}, apps: [] } };
+                    defaultCategories.forEach(c => state.logs[state.currentDate].screen.breakdown[c] = 0);
+                }
+
+                ui.renderTimelineBackground(); 
+                document.querySelectorAll('.timeline-block').forEach(el => el.remove());
+                state.logs[state.currentDate].habits.forEach(log => app.renderTimelineBlock(log));
+
+                $('st-total-minutes').value = state.logs[state.currentDate].screen.total || '';
+                app.renderScreenCategories(); app.renderAppsList(); app.renderHabitPool(); 
+            },
+
+            // --- HÁBITOS CRUD ---
+            openManageHabits: (habitId = null) => {
+                $('edit-habit-id').value = habitId || '';
+                if (habitId) {
+                    const h = state.habits.find(hab => hab.id === habitId);
+                    $('modal-habit-title').innerText = 'Editar Hábito';
+                    $('new-habit-name').value = h.name; $('new-habit-type').value = h.type;
+                    $('new-habit-points').value = h.points; $('new-habit-cat').value = h.cat;
+                    $('new-habit-color').value = h.color; $('btn-delete-habit').style.display = 'inline-flex';
+                } else {
+                    $('modal-habit-title').innerText = 'Crear Nuevo Hábito';
+                    $('new-habit-name').value = ''; $('new-habit-type').value = 'positive';
+                    $('new-habit-points').value = 10; $('new-habit-cat').value = '';
+                    $('new-habit-color').value = '#6366f1'; $('btn-delete-habit').style.display = 'none';
+                }
+                ui.openModal('modal-manage-habits');
+            },
+            saveHabitDefinition: () => {
+                const id = $('edit-habit-id').value;
+                const data = {
+                    id: id || generateId(),
+                    name: $('new-habit-name').value, type: $('new-habit-type').value,
+                    points: parseInt($('new-habit-points').value), cat: $('new-habit-cat').value || 'General',
+                    color: $('new-habit-color').value
+                };
+                if (!data.name) return;
+                if (id) {
+                    const idx = state.habits.findIndex(h => h.id === id);
+                    if (idx > -1) state.habits[idx] = data;
+                } else state.habits.push(data);
+                app.saveData(); app.renderHabitPool(); app.loadDayData(); ui.closeModal('modal-manage-habits');
+            },
+            deleteHabitDefinition: () => {
+                if (confirm('¿Eliminar este hábito?')) {
+                    state.habits = state.habits.filter(h => h.id !== $('edit-habit-id').value);
+                    app.saveData(); app.renderHabitPool(); ui.closeModal('modal-manage-habits');
+                }
+            },
+            renderHabitPool: () => {
+                const container = $('habit-pool-container'); container.innerHTML = '';
+                const canDrag = app.getDateStatus() !== 'past';
+                if (!canDrag) container.classList.add('disabled');
+                else container.classList.remove('disabled');
+
+                state.habits.forEach(h => {
+                    const el = document.createElement('div');
+                    el.className = 'draggable-habit'; el.draggable = canDrag; 
+                    el.style.borderLeft = `4px solid ${h.color}`;
+                    el.innerHTML = `
+                        <div class="habit-content" style="display:flex; align-items:center; gap:6px; flex:1;">
+                            <span class="habit-dot" style="background:${h.color}"></span><span>${h.name}</span>
+                        </div>
+                        <div class="habit-edit-btn" onclick="event.stopPropagation(); app.openManageHabits('${h.id}')">
+                            <i class="fas fa-pencil-alt"></i>
+                        </div>
+                    `;
+                    el.querySelector('.habit-content').onclick = () => {
+                        if(canDrag) {
+                            const startMins = Math.round((new Date().getHours() * 60 + new Date().getMinutes()) / 15) * 15;
+                            state.pendingDrop = { habitId: h.id, startMins, endMins: startMins + 60 };
+                            $('drop-habit-id').value = h.id; $('drop-start-time').value = minsToTime(startMins);
+                            $('drop-end-time').value = minsToTime(startMins + 60); ui.openModal('modal-drop-log');
+                        }
+                    };
+                    if(canDrag) el.ondragstart = (e) => e.dataTransfer.setData('habitId', h.id);
+                    container.appendChild(el);
+                });
+            },
+
+            // --- TIMELINE LOGIC ---
+            handleDrop: (e) => {
+                e.preventDefault(); if (app.getDateStatus() === 'past') return;
+                const habitId = e.dataTransfer.getData('habitId'); if (!habitId) return;
+                let startMins = Math.round((e.clientY - $('timeline-droppable').getBoundingClientRect().top) / 15) * 15;
+                state.pendingDrop = { habitId, startMins: Math.max(0, Math.min(startMins, 1380)), endMins: startMins + 60 };
+                $('drop-start-time').value = minsToTime(state.pendingDrop.startMins);
+                $('drop-end-time').value = minsToTime(state.pendingDrop.endMins); ui.openModal('modal-drop-log');
+            },
+            confirmDropLog: () => {
+                const start = timeToMins($('drop-start-time').value);
+                const end = timeToMins($('drop-end-time').value);
+                if (end <= start) return alert("Error en horario.");
+                const log = { id: generateId(), habitId: state.pendingDrop.habitId, start, end, checklist: [] };
+                state.logs[state.currentDate].habits.push(log);
+                app.saveData(); app.renderTimelineBlock(log); ui.closeModal('modal-drop-log');
+            },
+            renderTimelineBlock: (log) => {
+                const h = state.habits.find(x => x.id === log.habitId) || { name: 'Eliminado', color: '#666' };
+                const block = document.createElement('div');
+                block.className = `timeline-block ${app.getDateStatus() === 'past' ? 'locked' : ''}`;
+                block.style.top = log.start + 'px'; block.style.height = Math.max(30, (log.end - log.start)) + 'px';
+                block.style.borderColor = `${h.color}88`; block.style.background = `linear-gradient(135deg, ${h.color}44, ${h.color}11)`;
+                block.innerHTML = `<div style="font-weight:bold;">${h.name}</div><div class="text-xs">${minsToTime(log.start)} - ${minsToTime(log.end)}</div>`;
+                if (app.getDateStatus() !== 'past') block.onclick = () => app.openEditLogModal(log, h);
+                $('timeline-droppable').appendChild(block);
+            },
+
+            // --- EDIT LOG & CHECKLIST ---
+            openEditLogModal: (log, habit) => {
+                state.editingLogId = log.id;
+                $('edit-log-title').innerHTML = `Editar <span style="color:${habit.color}">${habit.name}</span>`;
+                $('edit-log-start').value = minsToTime(log.start);
+                $('edit-log-end').value = minsToTime(log.end);
+                
+                $('btn-start-focus').style.display = app.getDateStatus() === 'today' ? 'block' : 'none';
+                
+                app.renderChecklistUI();
+                ui.openModal('modal-edit-log');
+            },
+            renderChecklistUI: () => {
+                const container = $('checklist-items-container'); container.innerHTML = '';
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                if(!log.checklist) log.checklist = [];
+                
+                log.checklist.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = `checklist-item ${item.done ? 'done' : ''}`;
+                    div.innerHTML = `
+                        <div style="display:flex; align-items:center;">
+                            <div class="checklist-checkbox" onclick="app.toggleChecklist('${item.id}')"></div>
+                            <span>${item.text}</span>
+                        </div>
+                        <i class="fas fa-times text-xs" style="color:var(--danger); cursor:pointer;" onclick="app.removeChecklist('${item.id}')"></i>
+                    `;
+                    container.appendChild(div);
+                });
+            },
+            addChecklistItem: () => {
+                const input = $('checklist-new-input');
+                if(!input.value.trim()) return;
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                if(!log.checklist) log.checklist = [];
+                log.checklist.push({ id: generateId(), text: input.value.trim(), done: false });
+                input.value = ''; app.saveData(); app.renderChecklistUI();
+            },
+            toggleChecklist: (id) => {
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                const item = log.checklist.find(i => i.id === id);
+                item.done = !item.done; app.saveData(); app.renderChecklistUI();
+            },
+            removeChecklist: (id) => {
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                log.checklist = log.checklist.filter(i => i.id !== id);
+                app.saveData(); app.renderChecklistUI();
+            },
+            saveLogEdit: () => {
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                log.start = timeToMins($('edit-log-start').value); log.end = timeToMins($('edit-log-end').value);
+                app.saveData(); app.loadDayData(); ui.closeModal('modal-edit-log');
+            },
+            deleteLog: () => {
+                state.logs[state.currentDate].habits = state.logs[state.currentDate].habits.filter(l => l.id !== state.editingLogId);
+                app.saveData(); app.loadDayData(); ui.closeModal('modal-edit-log');
+            },
+
+            // --- FOCUS MODE ---
+            startFocusMode: () => {
+                const log = state.logs[state.currentDate].habits.find(l => l.id === state.editingLogId);
+                const habit = state.habits.find(h => h.id === log.habitId);
+                ui.closeModal('modal-edit-log');
+                
+                $('focus-overlay').classList.add('active');
+                $('focus-title').innerText = `Enfoque: ${habit.name}`;
+                $('focus-circle-ui').style.borderColor = habit.color;
+                $('focus-circle-ui').style.boxShadow = `0 0 50px ${habit.color}66`;
+
+                state.focusSecondsLeft = (log.end - log.start) * 60; 
+                app.updateFocusDisplay();
+
+                state.focusInterval = setInterval(() => {
+                    state.focusSecondsLeft--;
+                    app.updateFocusDisplay();
+                    if(state.focusSecondsLeft <= 0) {
+                        app.stopFocusMode();
+                        alert(`¡Excelente! Terminaste tu sesión de ${habit.name}.`);
+                    }
+                }, 1000);
+            },
+            updateFocusDisplay: () => {
+                const m = Math.floor(state.focusSecondsLeft / 60).toString().padStart(2, '0');
+                const s = (state.focusSecondsLeft % 60).toString().padStart(2, '0');
+                $('focus-timer-display').innerText = `${m}:${s}`;
+            },
+            stopFocusMode: () => {
+                clearInterval(state.focusInterval);
+                $('focus-overlay').classList.remove('active');
+            },
+
+            // --- PUSH NOTIFICATIONS ---
+            initNotifications: () => {
+                if ("Notification" in window) {
+                    if (Notification.permission === "granted") $('btn-notifications').style.color = 'var(--primary)';
+                    setInterval(app.checkUpcomingBlocks, 60000);
+                }
+            },
+            requestNotifications: () => {
+                if (!("Notification" in window)) return alert("Las notificaciones requieren que abras el archivo desde GitHub Pages o un servidor local seguro.");
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        $('btn-notifications').style.color = 'var(--primary)';
+                        new Notification("SUMA+", { body: "¡Notificaciones activadas!" });
+                    }
+                });
+            },
+            checkUpcomingBlocks: () => {
+                if (Notification.permission !== "granted" || app.getDateStatus() !== 'today') return;
+                const now = new Date();
+                const currentMins = now.getHours() * 60 + now.getMinutes();
+                const logs = state.logs[state.currentDate].habits || [];
+                
+                logs.forEach(log => {
+                    if (log.start - currentMins === 5) {
+                        const h = state.habits.find(x => x.id === log.habitId);
+                        new Notification("SUMA+ HABITS", { 
+                            body: `Prepárate, tu sesión de ${h.name} inicia en 5 minutos.`,
+                            icon: 'https://omniversidadmx.wordpress.com/wp-content/uploads/2025/11/photoroom_20251121_145918.png'
+                        });
+                    }
+                });
+            },
+
+            // --- STATS, SMART HEATMAP & SCREEN ---
+            updateScreenTimeMain: () => { state.logs[state.currentDate].screen.total = parseInt($('st-total-minutes').value) || 0; app.saveData(); },
+            renderScreenCategories: () => {
+                const c = $('st-categories-container'); c.innerHTML = '';
+                const d = state.logs[state.currentDate].screen.breakdown || {};
+                const dis = app.getDateStatus() !== 'today' ? 'disabled' : '';
+                defaultCategories.forEach(cat => {
+                    const div = document.createElement('div');
+                    div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.05); border-radius:12px;';
+                    div.innerHTML = `<span style="font-size:0.9rem;">${cat}</span><input type="number" style="width:80px; margin:0; padding:8px;" value="${d[cat]||0}" onchange="state.logs[state.currentDate].screen.breakdown['${cat}']=parseInt(this.value)||0; app.saveData();" ${dis}>`;
+                    c.appendChild(div);
+                });
+            },
+            addScreenApp: () => {
+                const n = $('app-log-name').value; const m = parseInt($('app-log-mins').value);
+                if(n && m) { state.logs[state.currentDate].screen.apps.push({name:n, mins:m}); app.saveData(); app.renderAppsList(); ui.closeModal('modal-add-app'); }
+            },
+            renderAppsList: () => {
+                const l = $('st-apps-list'); l.innerHTML = ''; const a = state.logs[state.currentDate].screen.apps || [];
+                a.slice(0, 10).forEach((appItem, i) => {
+                    const div = document.createElement('div'); div.style.cssText = 'display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); align-items:center;';
+                    div.innerHTML = `<i class="fas fa-mobile-alt" style="color:var(--text-muted)"></i><span style="font-weight:600;">${appItem.name}</span><span class="text-sm">${appItem.mins}m</span><i class="fas fa-trash text-xs" style="cursor:pointer;" onclick="app.removeApp(${i})"></i>`;
+                    l.appendChild(div);
+                });
+            },
+            removeApp: (i) => { state.logs[state.currentDate].screen.apps.splice(i, 1); app.saveData(); app.renderAppsList(); },
+
+            calculateDailyScore: (logData) => {
+                if(!logData || !logData.habits) return 0;
+                let s = 0; logData.habits.forEach(log => { const h = state.habits.find(hab => hab.id === log.habitId); if(h) s += (h.type === 'positive' ? h.points : -h.points); });
+                return s;
+            },
+            renderReports: () => {
+                const data = state.logs[state.currentDate];
+                const score = app.calculateDailyScore(data);
+                $('report-score-val').innerText = score; $('report-score-val').style.color = score >= 0 ? 'var(--success)' : 'var(--danger)';
+                const ts = data.screen.total; $('report-screen-val').innerText = `${Math.floor(ts/60)}h ${ts%60}m`;
+                
+                let txt = "Comienza registrando tus hábitos.";
+                if(data.habits.length > 0 || ts > 0) {
+                    if(score > 20 && ts < 120) txt = "🔥 ¡Día muy productivo!";
+                    else if(score > 0) txt = "✅ Vas por buen camino.";
+                    else if(ts > 240) txt = "⚠️ Revisa tu tiempo en pantalla.";
+                    else txt = "📉 Enfócate en recuperar puntos.";
+                }
+                $('daily-analysis-text').innerText = txt;
+
+                app.renderSmartHeatmap();
+                if(window.Chart) app.drawCharts(data.screen.breakdown);
+            },
+            
+            // LÓGICA DEL HEATMAP INTELIGENTE
+            renderSmartHeatmap: () => {
+                const container = $('heatmap-grid'); 
+                container.innerHTML = '';
+                const today = new Date();
+                
+                const days = [];
+                for(let i = 29; i >= 0; i--) {
+                    const d = new Date(today); 
+                    d.setDate(d.getDate() - i);
+                    days.push(d);
+                }
+
+                const firstDayWeekday = days[0].getDay(); 
+                
+                for(let i = 0; i < firstDayWeekday; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'heatmap-cell empty';
+                    container.appendChild(emptyCell);
+                }
+
+                days.forEach(d => {
+                    const dateStr = formatDate(d);
+                    const log = state.logs[dateStr];
+                    const score = app.calculateDailyScore(log);
+                    
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+                    cell.innerText = d.getDate(); 
+                    
+                    if (score > 30) cell.classList.add('level-4');
+                    else if (score > 15) cell.classList.add('level-3');
+                    else if (score > 0) cell.classList.add('level-2');
+                    else if (score < 0) cell.classList.add('negative');
+                    else cell.classList.add('level-1'); 
+                    
+                    if (dateStr > state.currentDate) {
+                        cell.style.background = 'rgba(255,255,255,0.02)';
+                        cell.style.color = 'rgba(255,255,255,0.2)';
+                    }
+                    
+                    cell.onclick = () => {
+                        const dateFormatted = d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+                        alert(`Día: ${dateFormatted}\nPuntaje: ${score} pts`);
+                    };
+                    
+                    container.appendChild(cell);
+                });
+            },
+            
+            drawCharts: (cats) => {
+                if(app.chartTrend) app.chartTrend.destroy();
+                const labels = [], scores = []; const [y, m, day] = state.currentDate.split('-').map(Number); const d = new Date(y, m - 1, day);
+                for (let i = 6; i >= 0; i--) {
+                    const td = new Date(d); td.setDate(d.getDate() - i);
+                    labels.push(td.toLocaleDateString('es-ES', {weekday:'short'}));
+                    scores.push(app.calculateDailyScore(state.logs[formatDate(td)]));
+                }
+                app.chartTrend = new Chart($('chart-trend').getContext('2d'), {
+                    type: 'line', data: { labels, datasets: [{ data: scores, borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } }
+                });
+            },
+
+            exportImage: () => {
+                alert("Para usar la exportación a PDF, sube tu proyecto a GitHub Pages.");
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
